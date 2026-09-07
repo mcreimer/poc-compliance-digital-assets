@@ -1,0 +1,47 @@
+[
+  {
+    "id": "TX001",
+    "timestamp": "2026-09-01T09:00:00",
+    "from": "BANK_ALPHA",
+    "to": "CUSTODIAN_GAMMA",
+    "amount_brl": 25000,
+    "destination_risk": 5,
+    "sanctions_match": false
+  },
+  {
+    "id": "TX002",
+    "timestamp": "2026-09-01T09:10:00",
+    "from": "BANK_ALPHA",
+    "to": "FINTECH_DELTA",
+    "amount_brl": 120000,
+    "destination_risk": 10,
+    "sanctions_match": false
+  },
+  {
+    "id": "TX003",
+    "timestamp": "2026-09-01T09:12:00",
+    "from": "FINTECH_DELTA",
+    "to": "CUSTODIAN_GAMMA",
+    "amount_brl": 110000,
+    "destination_risk": 5,
+    "sanctions_match": false
+  },
+  {
+    "id": "TX004",
+    "timestamp": "2026-09-01T10:00:00",
+    "from": "EXCHANGE_BETA",
+    "to": "CUSTODIAN_GAMMA",
+    "amount_brl": 60000,
+    "destination_risk": 85,
+    "sanctions_match": false
+  },
+  {
+    "id": "TX005",
+    "timestamp": "2026-09-01T10:30:00",
+    "from": "BANK_ALPHA",
+    "to": "BROKER_EPSILON",
+    "amount_brl": 10000,
+    "destination_risk": 20,
+    "sanctions_match": true
+  }
+]
