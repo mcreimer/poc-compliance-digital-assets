@@ -29,7 +29,7 @@ Simulated transactions -> Compliance Engine
 
 ## O que isto demonstra
 
-Mesmo sem blockchain real, já conseguimos explicar em uma entrevista ou demo:
+Mesmo sem blockchain real, já conseguimos verificar:
 
 1. como uma instituição é identificada via KYB;
 2. como uma transação é avaliada;
