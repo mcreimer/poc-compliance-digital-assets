@@ -2,3 +2,5 @@ besu-test-network/
 report-besu.html
 __pycache__/
 *.pyc
+sumsub_applicants.json
+cases/
