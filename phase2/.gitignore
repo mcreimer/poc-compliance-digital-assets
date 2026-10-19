@@ -1,6 +1,25 @@
+# Local Besu/Chainlens runtime
 besu-test-network/
+
+# Generated reports and compliance cases
 report-besu.html
+cases/
+
+# Python
 __pycache__/
 *.pyc
+.venv/
+venv/
+
+# Secrets / local environment
+.env
+.env.*
+!.env.example
+
+# Local Sumsub applicant mapping
 sumsub_applicants.json
-cases/
+
+# Editor / OS temporary files
+~$*.docx
+.DS_Store
+Thumbs.db
