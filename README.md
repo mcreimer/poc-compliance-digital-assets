@@ -101,6 +101,38 @@ cp sumsub_applicants.example.json sumsub_applicants.json
 
 Depois substitua o placeholder pelo Applicant ID do sandbox.
 
+Scripts auxiliares da integração Sumsub:
+
+- `sumsub_client.py` — autenticação e assinatura das chamadas à API;
+- `create_sumsub_individual.py` — criação/consulta de applicant individual no sandbox;
+- `test_sumsub_env.py` — validação local das variáveis de ambiente;
+- `test_sumsub_api.py` — teste de conectividade/autenticação;
+- `test_sumsub_tm.py` — teste de disponibilidade do módulo Transaction Monitoring;
+- `send_to_sumsub.py` — leitura de uma transação do Besu e preparação/envio do payload de Transaction Monitoring.
+
+Para validar apenas a configuração local:
+
+```bash
+python test_sumsub_env.py
+```
+
+Para testar a API:
+
+```bash
+python test_sumsub_api.py
+```
+
+Para gerar e revisar o payload da transação de 11 ETH sem enviá-lo:
+
+```bash
+python send_to_sumsub.py \
+  --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c \
+  --level id-only \
+  --show-payload
+```
+
+Quando o script perguntar se deve enviar para a Sumsub, responda `N` se quiser apenas fazer o dry run.
+
 ### Limitação atual
 
 A autenticação básica com a API da Sumsub foi validada no ambiente de desenvolvimento, mas o endpoint de **Transaction Monitoring/KYT** retornou:
@@ -147,6 +179,12 @@ poc-compliance-digital-assets/
 ├── entities.json
 ├── wallet_intelligence.json
 ├── sumsub_applicants.example.json
+├── sumsub_client.py
+├── create_sumsub_individual.py
+├── send_to_sumsub.py
+├── test_sumsub_api.py
+├── test_sumsub_env.py
+├── test_sumsub_tm.py
 ├── requirements.txt
 └── .gitignore
 ```
@@ -338,6 +376,38 @@ cp sumsub_applicants.example.json sumsub_applicants.json
 ```
 
 Then replace the placeholder with the sandbox Applicant ID.
+
+Supporting Sumsub integration scripts:
+
+- `sumsub_client.py` — API authentication and request signing;
+- `create_sumsub_individual.py` — create/query an individual sandbox applicant;
+- `test_sumsub_env.py` — validate local environment variables;
+- `test_sumsub_api.py` — connectivity/authentication test;
+- `test_sumsub_tm.py` — check whether Transaction Monitoring is enabled;
+- `send_to_sumsub.py` — read a Besu transaction and prepare/submit the Transaction Monitoring payload.
+
+Validate local configuration:
+
+```bash
+python test_sumsub_env.py
+```
+
+Test API connectivity:
+
+```bash
+python test_sumsub_api.py
+```
+
+Generate and inspect the 11 ETH transaction payload without submitting it:
+
+```bash
+python send_to_sumsub.py \
+  --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c \
+  --level id-only \
+  --show-payload
+```
+
+Answer `N` when prompted if you only want a dry run.
 
 ### Current limitation
 
