@@ -1,0 +1,9 @@
+[
+  {
+    "entityId": "BANK_ALPHA",
+    "externalUserId": "POC_BANK_ALPHA",
+    "applicantId": "6abd2cf20b8a55780eccb1c6",
+    "verificationLevel": "id-only",
+    "reviewStatus": "init"
+  }
+]
