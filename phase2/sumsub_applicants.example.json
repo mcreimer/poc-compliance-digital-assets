@@ -1,9 +1,0 @@
-[
-  {
-    "entityId": "BANK_ALPHA",
-    "externalUserId": "POC_BANK_ALPHA",
-    "applicantId": "REPLACE_WITH_SUMSUB_SANDBOX_APPLICANT_ID",
-    "verificationLevel": "id-only",
-    "reviewStatus": "init"
-  }
-]
