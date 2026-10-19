@@ -23,3 +23,6 @@ sumsub_applicants.json
 ~$*.docx
 .DS_Store
 Thumbs.db
+
+# Local credential notes (never commit)
+Token POC Git Push.txt
