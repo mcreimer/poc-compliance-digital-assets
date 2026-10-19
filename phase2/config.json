@@ -1,6 +1,0 @@
-{
-  "rpc_url": "http://localhost:8545",
-  "high_value_threshold_eth": 10,
-  "rapid_pass_through_minutes": 15,
-  "rapid_pass_through_ratio": 0.75
-}
