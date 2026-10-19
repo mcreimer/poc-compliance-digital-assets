@@ -2,170 +2,474 @@
 
 ## Português
 
-PoC de compliance para ativos digitais que evolui de transações simuladas para uma rede privada **Hyperledger Besu** com visualização em **Chainlens**, associação de identidade via **Sumsub Sandbox** e geração de alertas/casos de compliance por regras explicáveis.
+PoC de compliance para ativos digitais usando uma rede privada **Hyperledger Besu**, visualização on-chain com **Chainlens**, associação de identidade via **Sumsub Sandbox** e um mecanismo próprio de regras para gerar alertas e casos auditáveis.
 
 > Projeto educacional e demonstrativo. Não é um sistema AML/KYT de produção.
 
-## O que a PoC demonstra
+## Objetivo
 
-O fluxo atual é:
+A PoC demonstra como uma instituição pode:
+
+1. identificar uma entidade fora da blockchain;
+2. associar essa entidade a uma wallet conhecida;
+3. observar uma transação real em uma rede permissionada;
+4. enriquecer endereços blockchain com contexto de negócio;
+5. aplicar regras de risco;
+6. gerar uma decisão de compliance explicável;
+7. registrar o resultado em um case JSON para auditoria.
+
+## Arquitetura
 
 ```text
-Identidade / Applicant
-        |
-        v
-   Wallet conhecida
-        |
-        v
- Hyperledger Besu
-        |
-        +--> Chainlens
-        |    visualização on-chain
-        |
-        +--> Compliance Monitor
-             regras de risco
-                  |
-                  v
-          Risk score / decisão
-                  |
-                  v
-          Compliance Case JSON
+                   Sumsub
+              Applicant / IDV
+                     |
+                     | associação de identidade
+                     v
+                Wallet conhecida
+                     |
+                     v
+            Hyperledger Besu
+                     |
+            transação on-chain
+                     |
+          +----------+-----------+
+          |                      |
+          v                      v
+      Chainlens          Compliance Monitor
+   Explorer visual        regras de risco
+                                 |
+                                 v
+                         Risk score / decisão
+                                 |
+                                 v
+                         Compliance Case JSON
 ```
 
-A transação principal usada na demonstração é uma transferência real da rede local:
+O **Chainlens** e o `compliance_monitor.py` observam a mesma rede Besu por perspectivas diferentes:
+
+- Chainlens: evidência visual da atividade on-chain;
+- Compliance Monitor: interpretação da transação sob a ótica de risco e compliance.
+
+Mais detalhes em [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Cenário principal da demonstração
+
+A transação usada como exemplo foi registrada na rede Besu local:
 
 ```text
-Banco Alpha -> Custodian Gamma
-11 ETH
-Block 4453
+Banco Alpha
+0xfe3b557e8fb62b89f4916b721be55ceb828dbd73
+
+        | 11 ETH
+        v
+
+Custodian Gamma
+0xf17f52151ebef6c7334fad080c5704d77216b732
+```
+
+Dados da transação:
+
+```text
+Block: 4453
 Status: Succeeded
+Tx hash:
+0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
 ```
 
-O rules engine classifica essa transação como:
+O Compliance Monitor lê a mesma transação diretamente do Besu e gera:
 
 ```text
 Risk score: 60 / 100
 Risk level: HIGH
 Decision: MANUAL_REVIEW
-Rule: HIGH_VALUE_TRANSFER
+
+Rule:
+HIGH_VALUE_TRANSFER
+Transaction amount is 10 ETH or higher
 ```
 
-## Fases
+## Integração com Sumsub
 
-### Fase 1
+O Banco Alpha possui um applicant de sandbox na Sumsub associado localmente à entidade da PoC.
 
-Validação inicial da lógica de compliance com transações simuladas.
+O arquivo real `sumsub_applicants.json` é ignorado pelo Git. Para configurar o ambiente local:
 
-Inclui:
+```bash
+cp sumsub_applicants.example.json sumsub_applicants.json
+```
 
-- KYB fictício;
-- high-value transfer;
-- rapid pass-through;
-- mock wallet intelligence;
-- sanctions indicators simulados;
-- scoring explicável;
-- relatório HTML.
+Depois substitua o placeholder pelo Applicant ID do sandbox.
 
-### Fase 2
+### Limitação atual
 
-Integração com uma rede privada Hyperledger Besu.
+A autenticação básica com a API da Sumsub foi validada no ambiente de desenvolvimento, mas o endpoint de **Transaction Monitoring/KYT** retornou:
 
-Inclui:
+```text
+HTTP 403
+"You don't have this feature enabled, please contact us"
+```
 
-- transações reais da rede local;
-- consulta via JSON-RPC;
-- visualização com Chainlens;
-- associação entre entidades e wallets;
-- applicant sandbox da Sumsub associado ao Banco Alpha;
-- monitoramento por regras;
+Por isso, a PoC usa a Sumsub como camada de identidade e um rules engine local para a decisão de risco. Em uma implantação real, essa camada pode ser substituída ou complementada por uma plataforma especializada de transaction monitoring / blockchain intelligence.
+
+## Regras implementadas
+
+O `compliance_monitor.py` pode disparar:
+
+- `HIGH_VALUE_TRANSFER`;
+- `UNKNOWN_COUNTERPARTY`;
+- `SENDER_KYB_NOT_APPROVED`;
+- `COUNTERPARTY_KYB_NOT_APPROVED`;
+- `HIGH_RISK_ENTITY`;
+- `FAILED_TRANSACTION`.
+
+Classificação atual:
+
+```text
+0–29    LOW     -> ALLOW
+30–59   MEDIUM  -> REVIEW_IF_NEEDED
+60–100  HIGH    -> MANUAL_REVIEW
+```
+
+O `besu_monitor.py` também demonstra análise sobre várias transações, incluindo high-value transfer e rapid pass-through.
+
+## Estrutura do projeto
+
+```text
+poc-compliance-digital-assets/
+├── README.md
+├── ARCHITECTURE.md
+├── besu_monitor.py
+├── compliance_monitor.py
+├── send_transaction.py
+├── test_rpc.py
+├── config.json
+├── entities.json
+├── wallet_intelligence.json
+├── sumsub_applicants.example.json
+├── requirements.txt
+└── .gitignore
+```
+
+Arquivos gerados ou locais, como `.env`, `.venv/`, `sumsub_applicants.json`, `cases/` e `report-besu.html`, não devem ser versionados.
+
+## Como executar
+
+### Requisitos
+
+- Docker Desktop
+- WSL2 / Ubuntu
+- Python 3
+- Hyperledger Besu
+- rede Besu local acessível em `http://localhost:8545`
+
+Chain ID utilizado:
+
+```text
+1337
+```
+
+Instale as dependências:
+
+```bash
+pip install -r requirements.txt
+```
+
+Teste o RPC:
+
+```bash
+python test_rpc.py
+```
+
+Execute o monitor geral:
+
+```bash
+python besu_monitor.py --from-block 0
+```
+
+Avalie a transação principal da demonstração:
+
+```bash
+python compliance_monitor.py \
+  --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
+```
+
+O case é salvo localmente em:
+
+```text
+cases/CASE-CF85CF6D.json
+```
+
+## O que é real e o que é demonstrativo
+
+### Real no ambiente da PoC
+
+- rede privada Hyperledger Besu;
+- blocos e transações reais da rede local;
+- hashes e block numbers reais;
+- consulta por JSON-RPC;
+- visualização das transações no Chainlens;
+- applicant criado na Sumsub Sandbox;
+- associação entre Banco Alpha, wallet e Applicant ID;
+- execução do rules engine;
 - geração de compliance case em JSON.
 
-A documentação detalhada está em:
+### Demonstrativo / simplificado
 
-[phase2/README.md](phase2/README.md)
+- entidades Banco Alpha, Custodian Gamma etc.;
+- classificação de KYB em `entities.json`;
+- wallet intelligence em `wallet_intelligence.json`;
+- thresholds e scores de risco;
+- decisão final do rules engine.
 
-## Sumsub
+## Histórico
 
-A PoC usa um applicant sandbox para demonstrar a associação entre identidade e wallet.
-
-O módulo **Transaction Monitoring/KYT** não foi habilitado para a conta sandbox utilizada no desenvolvimento. Por isso, a PoC mantém a camada de identidade da Sumsub e usa um rules engine local para produzir o alerta de transação.
+A PoC começou com transações simuladas para validar as regras de compliance. Essa versão anterior continua preservada no histórico do Git, mas o repositório atual foi simplificado para apresentar somente a implementação baseada em Hyperledger Besu.
 
 ## Segurança
 
-Credenciais, arquivos `.env`, private keys reais e o arquivo local `sumsub_applicants.json` não devem ser versionados.
+Nunca publique:
+
+- `.env`;
+- App Token ou Secret Key da Sumsub;
+- private keys reais;
+- wallets com fundos reais;
+- credenciais de ambientes produtivos.
 
 ---
 
 # English
 
-This digital-asset compliance PoC evolves from simulated transactions to a private **Hyperledger Besu** network with **Chainlens** on-chain visibility, **Sumsub Sandbox** identity association, and an explainable local compliance rules engine.
+This digital-asset compliance PoC uses a private **Hyperledger Besu** network, **Chainlens** for on-chain visibility, **Sumsub Sandbox** for identity association, and a local rules engine that produces explainable alerts and auditable compliance cases.
 
 > This is an educational demonstration and not a production AML/KYT system.
 
-## What the PoC demonstrates
+## Goal
 
-Current flow:
+The PoC demonstrates how an institution can:
+
+1. identify an entity off-chain;
+2. associate that entity with a known wallet;
+3. observe a real transaction on a permissioned blockchain;
+4. enrich blockchain addresses with business context;
+5. apply risk rules;
+6. produce an explainable compliance decision;
+7. persist the result as a JSON case for audit purposes.
+
+## Architecture
 
 ```text
-Identity / Applicant
-        |
-        v
-    Known wallet
-        |
-        v
- Hyperledger Besu
-        |
-        +--> Chainlens
-        |    on-chain visibility
-        |
-        +--> Compliance Monitor
-             risk rules
-                  |
-                  v
-          Risk score / decision
-                  |
-                  v
-          Compliance Case JSON
+                   Sumsub
+              Applicant / IDV
+                     |
+                     | identity association
+                     v
+                Known wallet
+                     |
+                     v
+            Hyperledger Besu
+                     |
+            on-chain transaction
+                     |
+          +----------+-----------+
+          |                      |
+          v                      v
+      Chainlens          Compliance Monitor
+   visual explorer         risk rules
+                                 |
+                                 v
+                         Risk score / decision
+                                 |
+                                 v
+                         Compliance Case JSON
 ```
 
-Main demo transaction:
+Chainlens and `compliance_monitor.py` observe the same Besu network from different perspectives:
+
+- Chainlens provides visual evidence of on-chain activity;
+- Compliance Monitor interprets the transaction from a compliance and risk perspective.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for more details.
+
+## Main demo scenario
+
+The sample transaction was recorded on the local Besu network:
 
 ```text
-Banco Alpha -> Custodian Gamma
-11 ETH
-Block 4453
+Banco Alpha
+0xfe3b557e8fb62b89f4916b721be55ceb828dbd73
+
+        | 11 ETH
+        v
+
+Custodian Gamma
+0xf17f52151ebef6c7334fad080c5704d77216b732
+```
+
+Transaction data:
+
+```text
+Block: 4453
 Status: Succeeded
+Tx hash:
+0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
 ```
 
-Rules-engine result:
+The Compliance Monitor reads the same transaction directly from Besu and produces:
 
 ```text
 Risk score: 60 / 100
 Risk level: HIGH
 Decision: MANUAL_REVIEW
-Rule: HIGH_VALUE_TRANSFER
+
+Rule:
+HIGH_VALUE_TRANSFER
+Transaction amount is 10 ETH or higher
 ```
 
-## Phases
+## Sumsub integration
 
-### Phase 1
+Banco Alpha has a Sumsub sandbox applicant locally associated with the PoC entity.
 
-Initial validation using simulated transactions, KYB data, wallet-risk indicators, sanctions signals, rapid pass-through detection and explainable risk scoring.
+The real `sumsub_applicants.json` file is ignored by Git. To configure a local environment:
 
-### Phase 2
+```bash
+cp sumsub_applicants.example.json sumsub_applicants.json
+```
 
-Integration with a private Hyperledger Besu network, JSON-RPC transaction retrieval, Chainlens visualization, entity-to-wallet mapping, Sumsub sandbox applicant association, transaction rules and JSON compliance-case generation.
+Then replace the placeholder with the sandbox Applicant ID.
 
-Detailed documentation:
+### Current limitation
 
-[phase2/README.md](phase2/README.md)
+Basic Sumsub API authentication was validated during development, but the **Transaction Monitoring/KYT** endpoint returned:
 
-## Sumsub
+```text
+HTTP 403
+"You don't have this feature enabled, please contact us"
+```
 
-The PoC uses a sandbox applicant to demonstrate identity-to-wallet association.
+The PoC therefore uses Sumsub as the identity layer and a local rules engine for transaction-risk decisions. In a production architecture, this layer could be replaced or complemented by a specialized transaction-monitoring or blockchain-intelligence platform.
 
-The **Transaction Monitoring/KYT** feature was not enabled for the sandbox account used during development. The PoC therefore keeps Sumsub as the identity layer and uses a local rules engine for transaction-risk decisions.
+## Implemented rules
+
+`compliance_monitor.py` can trigger:
+
+- `HIGH_VALUE_TRANSFER`;
+- `UNKNOWN_COUNTERPARTY`;
+- `SENDER_KYB_NOT_APPROVED`;
+- `COUNTERPARTY_KYB_NOT_APPROVED`;
+- `HIGH_RISK_ENTITY`;
+- `FAILED_TRANSACTION`.
+
+Current thresholds:
+
+```text
+0–29    LOW     -> ALLOW
+30–59   MEDIUM  -> REVIEW_IF_NEEDED
+60–100  HIGH    -> MANUAL_REVIEW
+```
+
+`besu_monitor.py` also demonstrates analysis across multiple transactions, including high-value transfers and rapid pass-through patterns.
+
+## Project structure
+
+```text
+poc-compliance-digital-assets/
+├── README.md
+├── ARCHITECTURE.md
+├── besu_monitor.py
+├── compliance_monitor.py
+├── send_transaction.py
+├── test_rpc.py
+├── config.json
+├── entities.json
+├── wallet_intelligence.json
+├── sumsub_applicants.example.json
+├── requirements.txt
+└── .gitignore
+```
+
+Generated or local files such as `.env`, `.venv/`, `sumsub_applicants.json`, `cases/` and `report-besu.html` must not be committed.
+
+## How to run
+
+Requirements:
+
+- Docker Desktop
+- WSL2 / Ubuntu
+- Python 3
+- Hyperledger Besu
+- local Besu RPC available at `http://localhost:8545`
+
+Chain ID:
+
+```text
+1337
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Test RPC:
+
+```bash
+python test_rpc.py
+```
+
+Run the general monitor:
+
+```bash
+python besu_monitor.py --from-block 0
+```
+
+Evaluate the main demo transaction:
+
+```bash
+python compliance_monitor.py \
+  --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
+```
+
+The generated case is saved under:
+
+```text
+cases/CASE-CF85CF6D.json
+```
+
+## Real vs demonstrative
+
+### Real in the PoC environment
+
+- private Hyperledger Besu network;
+- real local-chain blocks and transactions;
+- real transaction hashes and block numbers;
+- JSON-RPC queries;
+- Chainlens transaction visualization;
+- applicant created in Sumsub Sandbox;
+- Banco Alpha / wallet / Applicant ID association;
+- local rules-engine execution;
+- JSON compliance-case generation.
+
+### Demonstrative / simplified
+
+- Banco Alpha, Custodian Gamma and other fictional entities;
+- KYB classifications in `entities.json`;
+- wallet-intelligence labels in `wallet_intelligence.json`;
+- risk thresholds and scoring;
+- final decision logic.
+
+## History
+
+The PoC initially used simulated transactions to validate the compliance rules. That earlier version remains available in Git history, while the current repository has been simplified to present only the Hyperledger Besu implementation.
 
 ## Security
 
-Do not commit credentials, `.env` files, real private keys or the local `sumsub_applicants.json` mapping.
+Never publish:
+
+- `.env`;
+- Sumsub App Token or Secret Key;
+- real private keys;
+- wallets containing real funds;
+- production credentials.
