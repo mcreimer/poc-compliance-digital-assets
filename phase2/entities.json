@@ -1,6 +1,0 @@
-[
-  {"id":"BANK_ALPHA","name":"Banco Alpha","kyb_status":"APPROVED","risk_level":"LOW","wallet":"0xfe3b557e8fb62b89f4916b721be55ceb828dbd73"},
-  {"id":"FINTECH_DELTA","name":"Fintech Delta","kyb_status":"APPROVED","risk_level":"MEDIUM","wallet":"0x627306090abab3a6e1400e9345bc60c78a8bef57"},
-  {"id":"CUSTODIAN_GAMMA","name":"Custodian Gamma","kyb_status":"APPROVED","risk_level":"LOW","wallet":"0xf17f52151ebef6c7334fad080c5704d77216b732"},
-  {"id":"BROKER_EPSILON","name":"Broker Epsilon","kyb_status":"PENDING","risk_level":"HIGH","wallet":"0x1111111111111111111111111111111111111111"}
-]

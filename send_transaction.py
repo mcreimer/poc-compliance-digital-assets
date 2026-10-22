@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 send_transaction.py
-Phase 2 - Digital Asset Compliance PoC
+Digital Asset Compliance PoC
 
 Signs a native ETH transfer locally and sends it to a Hyperledger Besu
 private network through JSON-RPC.
