@@ -117,28 +117,113 @@ JSON       Prometheus
             Grafana
 ```
 
-## Estrutura inicial
+## Modelo KYB implementado
+
+O perfil corporativo agora é avaliado por um engine determinístico. O JSON de entrada contém fatos e flags; `kyb_rules.py` calcula o score, o nível de risco e o status.
+
+### Validações
+
+- entidade deve ser do tipo `company`;
+- wallet deve ter formato Ethereum;
+- deve existir pelo menos um UBO;
+- IDs de UBO não podem se repetir;
+- percentuais de ownership precisam totalizar 100%.
+
+### Regras demonstrativas
+
+| Regra | Pontos | Efeito |
+| --- | ---: | --- |
+| MEDIUM_RISK_BUSINESS | +5 | score |
+| HIGH_RISK_BUSINESS | +20 | score |
+| HIGH_RISK_JURISDICTION | +25 | score |
+| COMPANY_ADVERSE_MEDIA | +25 | score |
+| DOCUMENTS_INCOMPLETE | +30 | score |
+| SOURCE_OF_FUNDS_UNVERIFIED | +20 | score |
+| UBO_PEP | +30 | score / EDD |
+| UBO_ADVERSE_MEDIA | +20 | score |
+| UBO_SANCTIONS_MATCH | +100 | hard reject |
+| REGISTRATION_NOT_ACTIVE | +100 | hard reject |
+
+Classificação:
+
+```text
+0-9     LOW       -> APPROVED
+10-29   MEDIUM    -> APPROVED
+30-69   HIGH      -> EDD_REQUIRED
+70-100  CRITICAL  -> REJECTED
+```
+
+Um hard reject sempre resulta em `REJECTED`.
+
+> Os pesos e thresholds são exclusivamente demonstrativos e não representam requisitos regulatórios.
+
+Para a Fintech Delta, o resultado esperado é:
+
+```text
+MEDIUM_RISK_BUSINESS  +5
+UBO_PEP              +30
+-------------------------
+Corporate Risk        35 / 100
+Risk Level            HIGH
+KYB Status            EDD_REQUIRED
+```
+
+## Como executar o KYB
+
+Entre na pasta:
+
+```bash
+cd poc2-kyb-transaction-monitoring
+```
+
+Avalie a Fintech Delta:
+
+```bash
+python evaluate_kyb.py --entity FINTECH_DELTA
+```
+
+Para também salvar o assessment em JSON:
+
+```bash
+python evaluate_kyb.py --entity FINTECH_DELTA --save
+```
+
+O resultado será criado em:
+
+```text
+cases/kyb/KYB-FINTECH_DELTA.json
+```
+
+Execute os testes:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+## Estrutura atual
 
 ```text
 poc2-kyb-transaction-monitoring/
 ├── README.md
 ├── ARCHITECTURE.md
-└── data/
-    ├── kyb_profiles.example.json
-    └── transaction_scenario.example.json
+├── kyb_model.py
+├── kyb_rules.py
+├── evaluate_kyb.py
+├── data/
+│   ├── kyb_profiles.example.json
+│   └── transaction_scenario.example.json
+└── tests/
+    └── test_kyb_rules.py
 ```
-
-Os próximos componentes serão adicionados nesta pasta, sem modificar a implementação da PoC original.
 
 ## Próximas etapas
 
-1. modelar KYB, ownership e UBO risk;
-2. criar transações do cenário no Besu;
-3. implementar `transaction_monitor.py` com janelas temporais;
-4. combinar corporate risk e transaction risk;
-5. gerar compliance case enriquecido;
-6. expor métricas de compliance;
-7. criar dashboard no Grafana.
+1. criar as transações do cenário no Besu;
+2. implementar `transaction_monitor.py` com janelas temporais;
+3. combinar corporate risk e transaction risk;
+4. gerar compliance case enriquecido;
+5. expor métricas de compliance;
+6. criar dashboard no Grafana.
 
 ---
 
