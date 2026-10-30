@@ -1,0 +1,31 @@
+{
+  "entities": [
+    {
+      "entityId": "FINTECH_DELTA",
+      "legalName": "Fintech Delta Ltda.",
+      "entityType": "company",
+      "country": "BRA",
+      "wallet": "0x627306090abab3a6e1400e9345bc60c78a8bef57",
+      "kybStatus": "EDD_REQUIRED",
+      "corporateRiskScore": 35,
+      "ubos": [
+        {
+          "uboId": "UBO_DELTA_01",
+          "name": "Demo UBO One",
+          "ownershipPct": 70,
+          "pep": false,
+          "sanctionsMatch": false,
+          "riskLevel": "LOW"
+        },
+        {
+          "uboId": "UBO_DELTA_02",
+          "name": "Demo UBO Two",
+          "ownershipPct": 30,
+          "pep": true,
+          "sanctionsMatch": false,
+          "riskLevel": "HIGH"
+        }
+      ]
+    }
+  ]
+}
