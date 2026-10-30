@@ -1,0 +1,38 @@
+{
+  "scenarioId": "DELTA_STRUCTURING_PASS_THROUGH",
+  "description": "Multiple inbound transfers below the threshold followed by rapid outbound movement to a high-risk counterparty.",
+  "subjectEntity": "FINTECH_DELTA",
+  "events": [
+    {
+      "offsetMinutes": 0,
+      "fromEntity": "WALLET_A",
+      "toEntity": "FINTECH_DELTA",
+      "amountEth": 3.4
+    },
+    {
+      "offsetMinutes": 4,
+      "fromEntity": "WALLET_B",
+      "toEntity": "FINTECH_DELTA",
+      "amountEth": 3.3
+    },
+    {
+      "offsetMinutes": 8,
+      "fromEntity": "WALLET_C",
+      "toEntity": "FINTECH_DELTA",
+      "amountEth": 3.5
+    },
+    {
+      "offsetMinutes": 12,
+      "fromEntity": "FINTECH_DELTA",
+      "toEntity": "BROKER_EPSILON",
+      "amountEth": 9.8
+    }
+  ],
+  "expectedSignals": [
+    "STRUCTURING",
+    "RAPID_PASS_THROUGH",
+    "HIGH_RISK_COUNTERPARTY",
+    "HIGH_RISK_UBO"
+  ],
+  "expectedDecision": "ESCALATE_CASE"
+}
