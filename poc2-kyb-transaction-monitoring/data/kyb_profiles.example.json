@@ -6,24 +6,31 @@
       "entityType": "company",
       "country": "BRA",
       "wallet": "0x627306090abab3a6e1400e9345bc60c78a8bef57",
-      "kybStatus": "EDD_REQUIRED",
-      "corporateRiskScore": 35,
+      "registrationStatus": "ACTIVE",
+      "businessActivity": "digital asset services",
+      "businessRisk": "MEDIUM",
+      "highRiskJurisdiction": false,
+      "adverseMedia": false,
+      "documentsComplete": true,
+      "sourceOfFundsVerified": true,
       "ubos": [
         {
           "uboId": "UBO_DELTA_01",
           "name": "Demo UBO One",
           "ownershipPct": 70,
+          "country": "BRA",
           "pep": false,
           "sanctionsMatch": false,
-          "riskLevel": "LOW"
+          "adverseMedia": false
         },
         {
           "uboId": "UBO_DELTA_02",
           "name": "Demo UBO Two",
           "ownershipPct": 30,
+          "country": "BRA",
           "pep": true,
           "sanctionsMatch": false,
-          "riskLevel": "HIGH"
+          "adverseMedia": false
         }
       ]
     }
