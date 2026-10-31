@@ -133,16 +133,16 @@ O perfil corporativo agora é avaliado por um engine determinístico. O JSON de 
 
 | Regra | Pontos | Efeito |
 | --- | ---: | --- |
-| MEDIUM_RISK_BUSINESS | +5 | score |
-| HIGH_RISK_BUSINESS | +20 | score |
-| HIGH_RISK_JURISDICTION | +25 | score |
-| COMPANY_ADVERSE_MEDIA | +25 | score |
-| DOCUMENTS_INCOMPLETE | +30 | score |
-| SOURCE_OF_FUNDS_UNVERIFIED | +20 | score |
+| NEGOCIO_RISCO_MEDIO | +5 | score |
+| NEGOCIO_ALTO_RISCO | +20 | score |
+| JURISDICAO_ALTO_RISCO | +25 | score |
+| MIDIA_ADVERSA_EMPRESA | +25 | score |
+| DOCUMENTOS_INCOMPLETOS | +30 | score |
+| ORIGEM_RECURSOS_NAO_VERIFICADA | +20 | score |
 | UBO_PEP | +30 | score / EDD |
-| UBO_ADVERSE_MEDIA | +20 | score |
-| UBO_SANCTIONS_MATCH | +100 | hard reject |
-| REGISTRATION_NOT_ACTIVE | +100 | hard reject |
+| MIDIA_ADVERSA_UBO | +20 | score |
+| UBO_LISTA_SANCOES | +100 | hard reject |
+| REGISTRO_EMPRESA_INATIVO | +100 | hard reject |
 
 Classificação:
 
@@ -160,7 +160,7 @@ Um hard reject sempre resulta em `REJECTED`.
 Para a Fintech Delta, o resultado esperado é:
 
 ```text
-MEDIUM_RISK_BUSINESS  +5
+NEGOCIO_RISCO_MEDIO  +5
 UBO_PEP              +30
 -------------------------
 Corporate Risk        35 / 100
@@ -200,6 +200,74 @@ Execute os testes:
 python -m unittest discover -s tests -v
 ```
 
+## Transaction Monitoring implementado
+
+A segunda etapa usa contexto histórico: as transações não são avaliadas isoladamente.
+
+Parâmetros demonstrativos:
+
+```text
+Janela de estruturação:      30 minutos
+Limite acumulado:            10 ETH
+Janela de passagem rápida:   15 minutos
+Proporção mínima de saída:   75%
+```
+
+O cenário da Fintech Delta produz:
+
+```text
+10:00  WALLET_A       -> FINTECH_DELTA      3.40 ETH
+10:04  WALLET_B       -> FINTECH_DELTA      3.30 ETH
+10:08  WALLET_C       -> FINTECH_DELTA      3.50 ETH
+10:12  FINTECH_DELTA  -> BROKER_EPSILON     9.80 ETH
+```
+
+Regras detectadas:
+
+| Regra | Pontos | Evidência |
+| --- | ---: | --- |
+| ESTRUTURACAO | +30 | três entradas abaixo de 10 ETH somam 10,20 ETH |
+| PASSAGEM_RAPIDA_DE_FUNDOS | +25 | 9,80 ETH saem após o recebimento de 10,20 ETH |
+| CONTRAPARTE_ALTO_RISCO | +30 | Broker Epsilon está classificado como alto risco |
+| UBO_ALTO_RISCO | contexto | sinal já refletido no score corporativo |
+
+Resultado esperado:
+
+```text
+Score corporativo:   35 / 100
+Score transacional:  85 / 100
+Score combinado:    100 / 100
+
+Nível de risco:      CRÍTICO
+Decisão:             ESCALAR_CASO
+```
+
+O score combinado é demonstrativo e calculado como a soma do score corporativo e do score transacional, limitada a 100. O contexto de UBO não adiciona pontos novamente para evitar dupla contagem.
+
+### Executar a demonstração
+
+```bash
+python transaction_monitor.py
+```
+
+Para também gerar o caso consolidado:
+
+```bash
+python transaction_monitor.py --salvar
+```
+
+O arquivo será criado em:
+
+```text
+cases/monitoramento/CASO-DELTA_ESTRUTURACAO_PASSAGEM_RAPIDA.json
+```
+
+Execute todos os testes:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
 ## Estrutura atual
 
 ```text
@@ -209,21 +277,24 @@ poc2-kyb-transaction-monitoring/
 ├── kyb_model.py
 ├── kyb_rules.py
 ├── evaluate_kyb.py
+├── transaction_rules.py
+├── transaction_monitor.py
 ├── data/
 │   ├── kyb_profiles.example.json
+│   ├── counterparties.example.json
 │   └── transaction_scenario.example.json
 └── tests/
-    └── test_kyb_rules.py
+    ├── test_kyb_rules.py
+    └── test_transaction_monitor.py
 ```
 
 ## Próximas etapas
 
-1. criar as transações do cenário no Besu;
-2. implementar `transaction_monitor.py` com janelas temporais;
-3. combinar corporate risk e transaction risk;
-4. gerar compliance case enriquecido;
-5. expor métricas de compliance;
-6. criar dashboard no Grafana.
+1. reproduzir o cenário com transações reais no Hyperledger Besu;
+2. substituir os eventos JSON por leitura do histórico via JSON-RPC;
+3. enriquecer o compliance case com hashes e blocos reais;
+4. expor métricas de compliance para Prometheus;
+5. criar dashboard de compliance no Grafana.
 
 ---
 
