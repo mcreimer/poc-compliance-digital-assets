@@ -1,0 +1,28 @@
+{
+  "counterparties": [
+    {
+      "entityId": "WALLET_A",
+      "name": "Wallet A",
+      "riskLevel": "LOW",
+      "riskReason": "Sem indicadores adicionais de risco na PoC"
+    },
+    {
+      "entityId": "WALLET_B",
+      "name": "Wallet B",
+      "riskLevel": "LOW",
+      "riskReason": "Sem indicadores adicionais de risco na PoC"
+    },
+    {
+      "entityId": "WALLET_C",
+      "name": "Wallet C",
+      "riskLevel": "LOW",
+      "riskReason": "Sem indicadores adicionais de risco na PoC"
+    },
+    {
+      "entityId": "BROKER_EPSILON",
+      "name": "Broker Epsilon",
+      "riskLevel": "HIGH",
+      "riskReason": "Serviço de alto risco no dataset demonstrativo"
+    }
+  ]
+}
