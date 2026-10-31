@@ -74,7 +74,7 @@ def imprimir_cabecalho(scenario: dict, profile, kyb_assessment) -> None:
     print("============================================================")
     print(f"Cenário:          {scenario['scenarioId']}")
     print(f"Entidade:         {profile.legal_name}")
-    print(f"Entity ID:        {profile.entity_id}")
+    print(f"ID da entidade:  {profile.entity_id}")
     print(f"Wallet:           {profile.wallet}")
     print()
     print("PERFIL KYB")
@@ -170,9 +170,28 @@ def construir_case(
                 kyb_assessment.status.value,
             ),
             "achados": [
-                item.to_dict() for item in kyb_assessment.findings
+                {
+                    "regra": item.rule,
+                    "pontos": item.points,
+                    "evidencia": item.evidence,
+                    "sujeito": item.subject,
+                    "rejeicaoAutomatica": item.hard_reject,
+                }
+                for item in kyb_assessment.findings
             ],
-            "ubos": list(kyb_assessment.ubo_risk),
+            "ubos": [
+                {
+                    "uboId": item["uboId"],
+                    "nome": item["name"],
+                    "participacaoPercentual": item["ownershipPct"],
+                    "nivelRisco": RISK_PT.get(
+                        item["riskLevel"],
+                        item["riskLevel"],
+                    ),
+                    "sinais": item["signals"],
+                }
+                for item in kyb_assessment.ubo_risk
+            ],
         },
         "transacoesRelacionadas": transacoes,
         "monitoramento": assessment.to_dict(),
