@@ -30,13 +30,13 @@ Exemplo inicial de perfil:
 FINTECH DELTA LTDA.
 |
 +-- UBO 1 - 70%
-|   +-- Risk: LOW
+|   +-- Risco: BAIXO
 |
 +-- UBO 2 - 30%
-    +-- PEP match: YES
-    +-- Risk: HIGH
+    +-- PEP: SIM
+    +-- Risco: ALTO
 
-Corporate status: EDD_REQUIRED
+Status corporativo: EDD NECESSÁRIA
 ```
 
 A empresa recebe várias transferências em uma janela curta:
@@ -65,9 +65,9 @@ O objetivo é detectar a combinação de sinais:
 Resultado esperado:
 
 ```text
-Transaction Risk Score: 100 / 100
-Risk Level: CRITICAL
-Decision: ESCALATE_CASE
+Score de risco combinado: 100 / 100
+Nível de risco: CRÍTICO
+Decisão: ESCALAR_CASO
 ```
 
 ## Evolução em relação à primeira PoC
