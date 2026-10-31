@@ -1,7 +1,8 @@
 {
-  "scenarioId": "DELTA_STRUCTURING_PASS_THROUGH",
-  "description": "Multiple inbound transfers below the threshold followed by rapid outbound movement to a high-risk counterparty.",
+  "scenarioId": "DELTA_ESTRUTURACAO_PASSAGEM_RAPIDA",
+  "description": "Múltiplas entradas abaixo do limite seguidas por rápida saída de recursos para uma contraparte de alto risco.",
   "subjectEntity": "FINTECH_DELTA",
+  "baseTime": "2026-10-31T10:00:00-03:00",
   "events": [
     {
       "offsetMinutes": 0,
@@ -29,10 +30,12 @@
     }
   ],
   "expectedSignals": [
-    "STRUCTURING",
-    "RAPID_PASS_THROUGH",
-    "HIGH_RISK_COUNTERPARTY",
-    "HIGH_RISK_UBO"
+    "ESTRUTURACAO",
+    "PASSAGEM_RAPIDA_DE_FUNDOS",
+    "CONTRAPARTE_ALTO_RISCO",
+    "UBO_ALTO_RISCO"
   ],
-  "expectedDecision": "ESCALATE_CASE"
+  "expectedTransactionRiskScore": 85,
+  "expectedCombinedRiskScore": 100,
+  "expectedDecision": "ESCALAR_CASO"
 }
