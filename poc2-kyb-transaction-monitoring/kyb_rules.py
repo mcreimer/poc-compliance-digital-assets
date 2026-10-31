@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Explainable corporate-risk rules for the KYB PoC."""
+"""Regras explicáveis de risco corporativo para a PoC de KYB."""
 
 from __future__ import annotations
 
@@ -18,13 +18,13 @@ def _ubo_risk(ubo: UBO) -> dict:
     signals = []
 
     if ubo.sanctions_match:
-        signals.append("SANCTIONS_MATCH")
+        signals.append("LISTA_SANCOES")
         level = RiskLevel.CRITICAL
     elif ubo.pep or ubo.adverse_media:
         if ubo.pep:
             signals.append("PEP")
         if ubo.adverse_media:
-            signals.append("ADVERSE_MEDIA")
+            signals.append("MIDIA_ADVERSA")
         level = RiskLevel.HIGH
     else:
         level = RiskLevel.LOW
@@ -60,59 +60,71 @@ def assess_company(profile: CompanyProfile) -> KYBAssessment:
 
     if profile.registration_status.upper() != "ACTIVE":
         add(
-            "REGISTRATION_NOT_ACTIVE",
+            "REGISTRO_EMPRESA_INATIVO",
             100,
-            f"Company registration status is {profile.registration_status}.",
+            f"O status cadastral da empresa é {profile.registration_status}.",
             hard_reject=True,
         )
 
     if profile.business_risk == BusinessRisk.MEDIUM:
         add(
-            "MEDIUM_RISK_BUSINESS",
+            "NEGOCIO_RISCO_MEDIO",
             5,
-            f"Business activity '{profile.business_activity}' is classified MEDIUM for this PoC.",
+            (
+                f"A atividade '{profile.business_activity}' foi classificada "
+                "como risco médio neste cenário demonstrativo."
+            ),
         )
     elif profile.business_risk == BusinessRisk.HIGH:
         add(
-            "HIGH_RISK_BUSINESS",
+            "NEGOCIO_ALTO_RISCO",
             20,
-            f"Business activity '{profile.business_activity}' is classified HIGH for this PoC.",
+            (
+                f"A atividade '{profile.business_activity}' foi classificada "
+                "como alto risco neste cenário demonstrativo."
+            ),
         )
 
     if profile.high_risk_jurisdiction:
         add(
-            "HIGH_RISK_JURISDICTION",
+            "JURISDICAO_ALTO_RISCO",
             25,
-            f"Company country {profile.country} is flagged high-risk in the demonstrative dataset.",
+            (
+                f"O país {profile.country} está marcado como jurisdição de "
+                "alto risco no dataset demonstrativo."
+            ),
         )
 
     if profile.adverse_media:
         add(
-            "COMPANY_ADVERSE_MEDIA",
+            "MIDIA_ADVERSA_EMPRESA",
             25,
-            "Company profile contains an adverse-media flag.",
+            "O perfil da empresa possui indicador de mídia adversa.",
         )
 
     if not profile.documents_complete:
         add(
-            "DOCUMENTS_INCOMPLETE",
+            "DOCUMENTOS_INCOMPLETOS",
             30,
-            "Required KYB documents are incomplete.",
+            "Os documentos requeridos para KYB estão incompletos.",
         )
 
     if not profile.source_of_funds_verified:
         add(
-            "SOURCE_OF_FUNDS_UNVERIFIED",
+            "ORIGEM_RECURSOS_NAO_VERIFICADA",
             20,
-            "Source of funds has not been verified.",
+            "A origem dos recursos ainda não foi verificada.",
         )
 
     for ubo in profile.ubos:
         if ubo.sanctions_match:
             add(
-                "UBO_SANCTIONS_MATCH",
+                "UBO_LISTA_SANCOES",
                 100,
-                f"{ubo.name} ({ubo.ownership_pct:.1f}% ownership) has a sanctions match.",
+                (
+                    f"{ubo.name} ({ubo.ownership_pct:.1f}% de participação) "
+                    "possui correspondência em lista de sanções."
+                ),
                 subject=ubo.ubo_id,
                 hard_reject=True,
             )
@@ -121,15 +133,21 @@ def assess_company(profile: CompanyProfile) -> KYBAssessment:
             add(
                 "UBO_PEP",
                 30,
-                f"{ubo.name} ({ubo.ownership_pct:.1f}% ownership) is flagged as PEP.",
+                (
+                    f"{ubo.name} ({ubo.ownership_pct:.1f}% de participação) "
+                    "está sinalizado como PEP."
+                ),
                 subject=ubo.ubo_id,
             )
 
         if ubo.adverse_media:
             add(
-                "UBO_ADVERSE_MEDIA",
+                "MIDIA_ADVERSA_UBO",
                 20,
-                f"{ubo.name} ({ubo.ownership_pct:.1f}% ownership) has an adverse-media flag.",
+                (
+                    f"{ubo.name} ({ubo.ownership_pct:.1f}% de participação) "
+                    "possui indicador de mídia adversa."
+                ),
                 subject=ubo.ubo_id,
             )
 
