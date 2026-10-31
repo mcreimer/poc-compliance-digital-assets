@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate corporate KYB profiles and print an explainable decision."""
+"""Avalia perfis corporativos KYB e apresenta uma decisão explicável."""
 
 from __future__ import annotations
 
@@ -15,6 +15,19 @@ BASE = Path(__file__).resolve().parent
 DEFAULT_INPUT = BASE / "data" / "kyb_profiles.example.json"
 DEFAULT_OUTPUT = BASE / "cases" / "kyb"
 
+RISK_PT = {
+    "LOW": "BAIXO",
+    "MEDIUM": "MÉDIO",
+    "HIGH": "ALTO",
+    "CRITICAL": "CRÍTICO",
+}
+
+STATUS_PT = {
+    "APPROVED": "APROVADO",
+    "EDD_REQUIRED": "EDD NECESSÁRIA",
+    "REJECTED": "REJEITADO",
+}
+
 
 def load_profiles(path: Path) -> list[CompanyProfile]:
     with path.open("r", encoding="utf-8") as f:
@@ -24,30 +37,39 @@ def load_profiles(path: Path) -> list[CompanyProfile]:
 
 
 def print_assessment(assessment) -> None:
-    print("\n====================================")
-    print(" CORPORATE KYB RISK ASSESSMENT")
-    print("====================================")
-    print(f"Entity:          {assessment.legal_name}")
-    print(f"Entity ID:       {assessment.entity_id}")
-    print(f"Wallet:          {assessment.wallet}")
-    print(f"Corporate score: {assessment.corporate_risk_score} / 100")
-    print(f"Risk level:      {assessment.risk_level.value}")
-    print(f"KYB status:      {assessment.status.value}")
+    print("\n============================================")
+    print(" AVALIAÇÃO DE RISCO CORPORATIVO - KYB")
+    print("============================================")
+    print(f"Empresa:           {assessment.legal_name}")
+    print(f"ID da entidade:    {assessment.entity_id}")
+    print(f"Wallet:            {assessment.wallet}")
+    print(f"Score corporativo: {assessment.corporate_risk_score} / 100")
+    print(
+        f"Nível de risco:    "
+        f"{RISK_PT.get(assessment.risk_level.value, assessment.risk_level.value)}"
+    )
+    print(
+        f"Status KYB:        "
+        f"{STATUS_PT.get(assessment.status.value, assessment.status.value)}"
+    )
 
-    print("\nUBO risk:")
+    print("\nRISCO DOS UBOs")
+    print("--------------------------------------------")
     for ubo in assessment.ubo_risk:
-        signals = ", ".join(ubo["signals"]) or "none"
+        signals = ", ".join(ubo["signals"]) or "nenhum"
+        nivel = RISK_PT.get(ubo["riskLevel"], ubo["riskLevel"])
         print(
             f" - {ubo['name']}: {ubo['ownershipPct']:.1f}% | "
-            f"{ubo['riskLevel']} | signals: {signals}"
+            f"{nivel} | sinais: {signals}"
         )
 
-    print("\nFindings:")
+    print("\nACHADOS")
+    print("--------------------------------------------")
     if not assessment.findings:
-        print(" - No risk findings.")
+        print(" - Nenhum indicador adicional de risco.")
     else:
         for finding in assessment.findings:
-            reject = " [HARD REJECT]" if finding.hard_reject else ""
+            reject = " [REJEIÇÃO AUTOMÁTICA]" if finding.hard_reject else ""
             print(
                 f" - {finding.rule}: +{finding.points} | "
                 f"{finding.evidence}{reject}"
@@ -56,22 +78,22 @@ def print_assessment(assessment) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Evaluate an explainable KYB corporate-risk profile."
+        description="Avalia um perfil KYB corporativo com regras explicáveis."
     )
     parser.add_argument(
         "--input",
         type=Path,
         default=DEFAULT_INPUT,
-        help=f"KYB JSON file (default: {DEFAULT_INPUT})",
+        help=f"Arquivo JSON de KYB (padrão: {DEFAULT_INPUT})",
     )
     parser.add_argument(
         "--entity",
-        help="Optional entityId to evaluate. If omitted, evaluates all entities.",
+        help="entityId a avaliar. Se omitido, avalia todas as empresas.",
     )
     parser.add_argument(
         "--save",
         action="store_true",
-        help="Save each assessment as JSON under cases/kyb/.",
+        help="Salva cada avaliação em JSON dentro de cases/kyb/.",
     )
     args = parser.parse_args()
 
@@ -80,7 +102,7 @@ def main() -> None:
     if args.entity:
         profiles = [p for p in profiles if p.entity_id == args.entity]
         if not profiles:
-            raise SystemExit(f"Entity not found: {args.entity}")
+            raise SystemExit(f"Entidade não encontrada: {args.entity}")
 
     for profile in profiles:
         assessment = assess_company(profile)
@@ -91,7 +113,7 @@ def main() -> None:
             output = DEFAULT_OUTPUT / f"KYB-{profile.entity_id}.json"
             with output.open("w", encoding="utf-8") as f:
                 json.dump(assessment.to_dict(), f, indent=2, ensure_ascii=False)
-            print(f"\nSaved: {output}")
+            print(f"\nAvaliação salva em: {output}")
 
 
 if __name__ == "__main__":
