@@ -56,7 +56,7 @@ def date_label(timestamp):
             dt = dt.astimezone(ZoneInfo("America/Sao_Paulo"))
             return dt.strftime("%d/%m/%Y · %H:%M BRT")
         return dt.strftime("%d/%m/%Y · %H:%M")
-    except (ValueError, ImportError):
+    except (ValueError, ImportError, KeyError):
         return str(timestamp)
 
 
@@ -382,7 +382,7 @@ $panels
         '⊞ Sair da apresentação' : '⛶ Modo apresentação';
   });
   document.addEventListener('keydown',e => {
-    if (e.target.closest('button,summary,input,textarea')) return;
+    if (e.target.closest('input,textarea,select')) return;
     if (e.key === 'ArrowRight') show((active+1)%panels.length);
     if (e.key === 'ArrowLeft') show((active+panels.length-1)%panels.length);
   });
