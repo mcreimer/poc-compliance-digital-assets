@@ -285,18 +285,36 @@ demonstrar o ciclo de decisão manual sem encerrar o alerta de 11 ETH.
 - ID interno da transação na Sumsub: `6aea4c1de6fd3995b0ab1cda`
 - Evidência JSON local: `cases/CASE-54494580.json`
 
-**Próxima etapa:** atribuir analista, adicionar observação e registrar
-uma decisão de teste no **Dashboard Sandbox** apenas para esta transação.
-Antes da decisão, registrar o estado `onHold` por API e no Dashboard,
-para preservar o comparativo do vídeo. Em seguida, consultar novamente
-`review_sumsub_tm.py --tx-hash <hash>` para capturar o status final.
+**Desfecho confirmado pela API (03/11/2026):** a segunda transação foi
+**aprovada manualmente no Dashboard Sandbox**, após a detecção da regra.
+
+- `reviewStatus` final: **`completed`**
+- `reviewAnswer` final: **`GREEN`**
+- Pontuação Sumsub mantida: **60**
+- Regra que disparou: **`POC3 - Transferencia de alto valor de ETH`**
+- `matchedRules`: **1**
+- ID interno: `6aea4c1de6fd3995b0ab1cda`
+- Confirmação posterior via `review_sumsub_tm.py` (modo somente consulta)
+- Case atualizado: `cases/CASE-54494580.json`
+- Relatório visual gerado: `cases/DEMO-CASE-54494580.html`
+
+**Linha do tempo:** `onHold` (regra de alto valor e encaminhamento à
+revisão) → **revisão manual no Sandbox** → `completed / GREEN`. O
+`reviewAnswer` era `N/A` antes da aprovação; os valores anteriores
+nesta seção descrevem aquela etapa, não o estado atual.
+
+A aprovação manual é uma **decisão demonstrativa** de revisão e não
+comprova, por si só, conformidade regulatória ou licitude da operação.
+Os arquivos `cases/` ficam no computador local, fora do GitHub.
 
 O score de 60 indica correspondência à regra de **valor elevado**,
 não uma conclusão de atividade ilícita ou aprovação automática de controles AML.
 
-**Atenção:** a decisão final deve ser aplicada somente à transação
-de 12 ETH, após registrar as telas com `onHold`. Preserve a transferência
-original de 11 ETH em espera para a gravação.
+**Para gravação:** a decisão final demonstrativa já foi tomada sobre a
+transação **de 12 ETH**. Preserve a transferência original **de 11 ETH**
+em espera, e apresente as duas operações em momentos diferentes do vídeo.
+Não execute novamente o POST de 12 ETH; para repetição, crie um cenário
+de teste com novo `txnId`.
 
 ## Regra de teste e limitações
 
