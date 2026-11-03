@@ -1,0 +1,14 @@
+{
+  "0x2222222222222222222222222222222222222222": {
+    "provider": "MOCK_BLOCKCHAIN_INTELLIGENCE",
+    "risk_score": 90,
+    "sanctions_match": false,
+    "exposures": ["MIXER_INDIRECT", "HIGH_RISK_SERVICE"]
+  },
+  "0x1111111111111111111111111111111111111111": {
+    "provider": "MOCK_BLOCKCHAIN_INTELLIGENCE",
+    "risk_score": 95,
+    "sanctions_match": true,
+    "exposures": ["SANCTIONED_ENTITY"]
+  }
+}

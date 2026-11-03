@@ -1,0 +1,119 @@
+# PoC 3 — Sumsub Transaction Monitoring + Hyperledger Besu
+
+> **Projeto independente da PoC 1 e PoC 2.** Os arquivos deste projeto estão inteiramente em `poc3-sumsub-transaction-monitoring/` na branch `poc3-sumsub-transaction-monitoring`. Não execute nem edite os scripts da raiz ou da `poc2-kyb-transaction-monitoring/` para esta etapa.
+
+## Objetivo
+
+Conectar transações **reais de uma rede local privada Hyperledger Besu (chainId 1337)** à API **Sumsub Transaction Monitoring Sandbox**, consultar os resultados efetivamente gerados pelo provedor e guardar evidências locais auditáveis.
+
+- A **PoC 1** continua na raiz de `compliance-monitor` (monitoramento e regras locais).
+- A **PoC 2** continua na pasta `poc2-kyb-transaction-monitoring/` da branch `kyb-transaction-monitoring`.
+- A **PoC 3** fica nesta pasta e nesta branch, sem alterar as anteriores.
+
+O ambiente Besu já existente é usado **somente para leitura via JSON-RPC**: a PoC 3 **não reconfigura nem reinicia os contêineres** da PoC 1. Para demonstrar a transação histórica de 11 ETH, a mesma rede precisa estar disponível em `http://localhost:8545`.
+
+## Arquitetura
+
+```text
+Hyperledger Besu (RPC read-only)
+  └─ transação confirmada 11 ETH: Banco Alpha → Custodian Gamma
+       └─ send_to_sumsub.py
+            └─ Sumsub Transaction Monitoring API [SANDBOX, applicant existente]
+                 └─ check_sumsub_tm.py: score/status/regras retornados
+                      └─ cases/CASE-CF85CF6D.json
+                         ├─ riskAssessment: motor de regras local da PoC 3 (demonstrativo)
+                         └─ sumsubTransactionMonitoring: resposta da Sumsub (real)
+```
+
+## Arquivos principais
+
+- `send_to_sumsub.py` — lê hash e bloco do Besu e envia a transação de negócio para o TM Sandbox após confirmação.
+- `check_sumsub_tm.py` — consulta a transação Sumsub por `txnId`.
+- `sumsub_tm_case.py` — persiste o resultado do TM sem confundi-lo com o score local.
+- `compliance_monitor.py` — gera o relatório local independente (não é score Sumsub).
+- `sumsub_client.py` — assina a API com credenciais lidas **somente do .env desta pasta**.
+- `test_sumsub_tm.py` — testa API de moedas disponíveis (não envia transações).
+- `test_sumsub_tm_integration.py` — testes locais sem credenciais nem rede.
+- `entities.json` e `sumsub_applicants.json` — associação local entre carteira, entidade fictícia e applicant Sandbox.
+
+## Instalação em NOVA pasta no Ubuntu/WSL
+
+Faça um clone **separado**, fora do diretório já utilizado pelas PoCs 1 e 2:
+
+```bash
+cd ~
+git clone --single-branch --branch poc3-sumsub-transaction-monitoring \
+  https://github.com/mcreimer/poc-compliance-digital-assets.git \
+  poc3-sumsub-tm
+
+cd ~/poc3-sumsub-tm/poc3-sumsub-transaction-monitoring
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+
+cp .env.example .env
+cp sumsub_applicants.example.json sumsub_applicants.json
+```
+
+Edite apenas os arquivos `.env` e `sumsub_applicants.json` **dentro desta pasta**. Insira suas credenciais do Sandbox e o `applicantId` já cadastrado para `BANK_ALPHA`. Nunca publique token, secret key nem o arquivo real de applicants.
+
+## Teste em etapas
+
+Na pasta `~/poc3-sumsub-tm/poc3-sumsub-transaction-monitoring`:
+
+```bash
+python -m unittest test_sumsub_tm_integration.py
+python test_rpc.py
+python test_sumsub_env.py
+python test_sumsub_tm.py
+```
+
+Transação original de 11 ETH (`block 4453`):
+
+```text
+0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
+```
+
+Gere o case local somente nesta pasta:
+
+```bash
+python compliance_monitor.py \
+  --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
+```
+
+Simule o envio (sem chamadas API):
+
+```bash
+python send_to_sumsub.py \
+  --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c \
+  --dry-run
+```
+
+Somente quando a configuração estiver validada, envie após a confirmação interativa:
+
+```bash
+python send_to_sumsub.py \
+  --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
+```
+
+Consulte o TM após processar:
+
+```bash
+python check_sumsub_tm.py \
+  --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
+```
+
+O resultado real fica em `cases/CASE-CF85CF6D.json` (arquivo local ignorado pelo Git). No Dashboard da Sumsub (modo Sandbox), procure em **Monitoring → Transactions and activity**. Para o GET, o token precisa da permissão **View TM transactions**.
+
+## Regra de teste e limitações
+
+Instale/configure regras no **Configurations → Rule hub**, em modo de teste primeiro; um valor de 11 ETH **não garante**, por si só, alerta ou rejeição.
+
+A Sumsub recebe atributos informados pelo sistema de origem, mas **não consegue comprovar automaticamente o hash da Besu privada em exploradores ou serviços de análise de blockchains públicas**. Crypto screening e alertas baseados em exposição on-chain pública podem não funcionar para a chain 1337. A PoC demonstra Transaction Monitoring, **não validação de Travel Rule** nem controles AML de produção.
+
+Os dados de `entities.json` e os thresholds do motor local são **fictícios/demonstrativos**. Resultados API são mostrados separadamente dos resultados locais. O app token deve ser `sbx:`; o script bloqueia envio com token de produção.
+
+### Documentação oficial da API
+- [Enviar transação para applicant existente](https://docs.sumsub.com/reference/submit-transaction-for-existing-applicant)
+- [Consultar transação por txnId](https://docs.sumsub.com/reference/get-transaction-information-by-txnid)
+- [Guia de início rápido Transaction Monitoring](https://docs.sumsub.com/docs/transaction-monitoring-quick-start-guide)
