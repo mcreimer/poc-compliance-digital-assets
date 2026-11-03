@@ -70,7 +70,7 @@ executar novamente `compliance_monitor.py` atualiza somente os campos locais e
 - `test_sumsub_tm.py` — testa API de moedas disponíveis (não envia transações).
 - `test_sumsub_tm_integration.py` — testes locais sem credenciais nem rede;
 - `review_sumsub_tm.py` — consulta a revisão; conclusão por API somente sob confirmação explícita;
-- `demo_case_report.py` — relatório HTML local para gravação do vídeo;
+- `demo_case_report.py` — dashboard HTML profissional, comparativo de dois casos e modo apresentação para gravação do vídeo;
 - `create_demo_transaction.py` — gera uma **segunda** transferência ETH na rede Besu privada para demonstrar a decisão final sem encerrar o alerta original;
 - `entities.json` e `sumsub_applicants.json` — associação local entre carteira, entidade fictícia e applicant Sandbox.
 
@@ -172,15 +172,38 @@ alterar a decisão da Sumsub.
 - Para essa operação, sua conta precisa da permissão
   **Manage TM transactions - Review**.
 
-**3. Gerar relatório visual para o vídeo**
+**3. Gerar relatório visual para o vídeo — layout profissional**
+
+O relatório agora tem uma interface escura de apresentação, KPIs, fluxo de
+integração Besu → Python → Sumsub, regras e linha do tempo por caso. Funciona
+**offline**, sem enviar dados nem alterar as decisões da plataforma.
+
+Para visualizar um único alerta:
 
 ```bash
 python demo_case_report.py --case cases/CASE-CF85CF6D.json
 ```
 
-Abra `cases/DEMO-CASE-CF85CF6D.html` em um navegador. O HTML resume os
-atributos relevantes e a linha do tempo das respostas observadas, sem
-publicar o payload integral da Sumsub.
+Para exibir **os dois cenários no mesmo relatório**, alternando entre os
+11 ETH (em espera) e os 12 ETH (aprovação GREEN):
+
+```bash
+python demo_case_report.py \
+  --case cases/CASE-CF85CF6D.json \
+  --case cases/CASE-54494580.json
+```
+
+O comando gera `cases/DEMO-PoC3-COMPARATIVO.html`, que pode ser aberto
+diretamente no navegador. No relatório, clique nas abas **11 ETH** e
+**12 ETH**; as teclas **← / →** também alternam os casos. Há um botão
+**Modo apresentação** para gravação em tela cheia do navegador e um
+estilo específico para imprimir ou salvar PDF pelo navegador.
+
+O HTML inclui somente informações selecionadas do case, não as credenciais
+nem a resposta bruta da Sumsub. **Observações e responsável do analista**
+são mostrados no próprio Dashboard Sumsub, não atribuídos artificialmente
+ao relatório. A linha do tempo mostra apenas estados efetivamente capturados
+no JSON, sem inventar eventos não registrados.
 
 **4. Decisão manual (opcional e somente quando tiver gravado o onHold)**
 
