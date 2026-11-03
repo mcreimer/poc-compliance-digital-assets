@@ -123,6 +123,33 @@ def evaluate_transaction(tx, receipt, amount_eth, sender, recipient):
     return rules, score, risk, decision, receipt_status
 
 
+def save_case_preserving_provider_evidence(case, base_dir=BASE):
+    """Update the local assessment without deleting a saved Sumsub TM response."""
+    cases_dir = Path(base_dir) / "cases"
+    cases_dir.mkdir(exist_ok=True)
+    output = cases_dir / f"{case['caseId']}.json"
+
+    if output.exists():
+        existing = json.loads(output.read_text(encoding="utf-8"))
+        existing_hash = (existing.get("transaction") or {}).get("hash")
+        new_hash = case["transaction"]["hash"]
+        if existing_hash and existing_hash.lower() != new_hash.lower():
+            raise ValueError(
+                "Existing case belongs to a different transaction; refusing overwrite."
+            )
+        # Keep provider results (and other evidence fields) intact when
+        # refreshing only the demonstrative local assessment.
+        case = {**existing, **case}
+        case["createdAt"] = existing.get("createdAt", case["createdAt"])
+
+    temporary = output.with_suffix(".tmp")
+    temporary.write_text(
+        json.dumps(case, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    temporary.replace(output)
+    return output
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Evaluate one Besu transaction and create a compliance case."
@@ -227,12 +254,7 @@ def main():
                 f"{rule['description']} (+{rule['score']})"
             )
 
-    cases_dir = Path(BASE) / "cases"
-    cases_dir.mkdir(exist_ok=True)
-    output = cases_dir / f"{case['caseId']}.json"
-
-    with output.open("w", encoding="utf-8") as f:
-        json.dump(case, f, indent=2, ensure_ascii=False)
+    output = save_case_preserving_provider_evidence(case)
 
     print("\nCompliance case saved:")
     print(output)
