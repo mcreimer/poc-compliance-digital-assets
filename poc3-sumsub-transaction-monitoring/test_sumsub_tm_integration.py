@@ -9,6 +9,7 @@ from unittest.mock import patch
 import send_to_sumsub
 import compliance_monitor
 import sumsub_tm_case
+import review_sumsub_tm
 
 
 HASH = "0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c"
@@ -94,6 +95,61 @@ class SumsubTMTests(unittest.TestCase):
             self.assertEqual(saved["sumsubTransactionMonitoring"], provider_evidence)
             self.assertEqual(saved["transaction"]["amount"], 11.0)
             self.assertEqual(saved["createdAt"], "2026-11-03T18:00:00+00:00")
+
+    def test_provider_timeline_preserves_on_hold_before_approval(self):
+        with tempfile.TemporaryDirectory() as folder:
+            p = Path(folder)
+            provider_on_hold = {
+                "id": "TESTTXN123456",
+                "data": {"txnId": "besu" + HASH[2:]},
+                "scoringResult": {"score": 60, "matchedRules": [
+                    {"name": "POC3 - Transferencia de alto valor de ETH"}
+                ]},
+                "review": {"reviewStatus": "onHold"},
+            }
+            provider_completed = {
+                **provider_on_hold,
+                "review": {"reviewStatus": "completed",
+                           "reviewResult": {"reviewAnswer": "GREEN"}},
+            }
+            with patch.object(sumsub_tm_case, "BASE", p):
+                sumsub_tm_case.save_sumsub_result(
+                    HASH, provider_on_hold, stage="queried"
+                )
+                path = sumsub_tm_case.save_sumsub_result(
+                    HASH, provider_completed, stage="manual-decision-confirmed"
+                )
+            saved = json.loads(path.read_text(encoding="utf-8"))
+            states = [x["reviewStatus"] for x in
+                      saved["sumsubMonitoringTimeline"]]
+            self.assertEqual(states, ["onHold", "completed"])
+            self.assertEqual(
+                saved["sumsubTransactionMonitoring"]["reviewAnswer"], "GREEN"
+            )
+
+    def test_review_decision_requires_exact_identity_and_onhold(self):
+        target = "besu" + HASH[2:]
+        valid = {
+            "id": "TESTTXN123456",
+            "data": {"txnId": target},
+            "review": {"reviewStatus": "onHold"},
+        }
+        review_sumsub_tm.validate_decision(
+            target, valid, "TESTTXN123456", "approve"
+        )
+        with self.assertRaises(ValueError):
+            review_sumsub_tm.validate_decision(
+                target, valid, "WRONGTXN123456", "approve"
+            )
+        with self.assertRaises(ValueError):
+            review_sumsub_tm.validate_decision(
+                target, {**valid, "review": {"reviewStatus": "completed"}},
+                "TESTTXN123456", "reject"
+            )
+        with self.assertRaises(ValueError):
+            review_sumsub_tm.validate_decision(
+                "besu" + ("0" * 64), valid, "TESTTXN123456", "approve"
+            )
 
     def test_case_rejects_different_transaction(self):
         with tempfile.TemporaryDirectory() as folder:
