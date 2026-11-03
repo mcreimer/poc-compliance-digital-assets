@@ -367,7 +367,7 @@ def main():
     if response.status_code not in (200, 201):
         print("\nERRO: a transação não foi aceita pelo Sumsub.")
         print(
-            "Confira principalmente o nome do level, permissões do App Token "
+            "Confira o applicantId, as permissões do App Token "
             "e se Transaction Monitoring está habilitado no Sandbox."
         )
         sys.exit(1)
