@@ -68,7 +68,10 @@ executar novamente `compliance_monitor.py` atualiza somente os campos locais e
 - `compliance_monitor.py` — gera o relatório local independente (não é score Sumsub).
 - `sumsub_client.py` — assina a API com credenciais lidas **somente do .env desta pasta**.
 - `test_sumsub_tm.py` — testa API de moedas disponíveis (não envia transações).
-- `test_sumsub_tm_integration.py` — testes locais sem credenciais nem rede.
+- `test_sumsub_tm_integration.py` — testes locais sem credenciais nem rede;
+- `review_sumsub_tm.py` — consulta a revisão; conclusão por API somente sob confirmação explícita;
+- `demo_case_report.py` — relatório HTML local para gravação do vídeo;
+- `VIDEO_DEMO.md` — roteiro preliminar com cenas Sumsub, Besu e trilha de auditoria.
 - `entities.json` e `sumsub_applicants.json` — associação local entre carteira, entidade fictícia e applicant Sandbox.
 
 ## Instalação em NOVA pasta no Ubuntu/WSL
@@ -139,6 +142,69 @@ python check_sumsub_tm.py \
 ```
 
 O resultado real fica em `cases/CASE-CF85CF6D.json` (arquivo local ignorado pelo Git). No Dashboard da Sumsub (modo Sandbox), procure em **Monitoring → Transactions and activity**. Para o GET, o token precisa da permissão **View TM transactions**.
+
+## Investigação e tratamento do alerta (etapa adicional)
+
+**Status verificado em 03/11/2026:** consulta TM `HTTP 200`,
+`score: 60`, `reviewStatus: onHold`, `reviewAnswer: N/A`,
+uma regra acionada: `POC3 - Transferencia de alto valor de ETH`.
+O ID interno retornado pela Sumsub foi `6aea325be4c626267f805024`.
+A decisão de compliance **não foi concluída**.
+
+Esta evolução foi preparada para um **vídeo demonstrativo**. Antes de
+aprovar ou rejeitar, gravar o alerta em estado `onHold` no Dashboard.
+
+**1. Inspeção segura (somente GET)**
+
+```bash
+python review_sumsub_tm.py \
+  --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
+```
+
+O comando consulta a resposta atual e atualiza o registro local sem
+alterar a decisão da Sumsub.
+
+**2. Atribuição e notas no Dashboard**
+
+- Abra **Monitoramento de transações → Transações**.
+- Atribua a transação em **Pessoa designada** ou no detalhe da transação.
+- Abra a transação, examine pontuação/regras e adicione uma nota na seção **Notas**.
+- Para essa operação, sua conta precisa da permissão
+  **Manage TM transactions - Review**.
+
+**3. Gerar relatório visual para o vídeo**
+
+```bash
+python demo_case_report.py --case cases/CASE-CF85CF6D.json
+```
+
+Abra `cases/DEMO-CASE-CF85CF6D.html` em um navegador. O HTML resume os
+atributos relevantes e a linha do tempo das respostas observadas, sem
+publicar o payload integral da Sumsub.
+
+**4. Decisão manual (opcional e somente quando tiver gravado o onHold)**
+
+A decisão pode ser tomada pelo próprio Dashboard Sumsub. Depois, execute
+novamente o comando `review_sumsub_tm.py` para registrar a transição
+`onHold → completed` e `GREEN` ou `RED` no case local.
+
+Também está disponível uma alternativa por API, deliberadamente bloqueada
+até a confirmação explícita de `--decision`, do ID interno da transação
+e de uma frase digitada no terminal:
+
+```bash
+# Exemplo: somente se decidir APROVAR explicitamente no Sandbox.
+# Não executar durante preparação do vídeo.
+# python review_sumsub_tm.py --tx-hash <HASH> --decision approve --confirm-sumsub-id <SUMSUB_INTERNAL_ID>
+```
+
+Para essas decisões, o token necessita da permissão
+**Manage TM transactions - Decisions**. A decisão não é reversível pelo
+script: use apenas um Sandbox e confira o caso antes de agir.
+
+**Roteiro detalhado com sequência de telas e falas:** [VIDEO_DEMO.md](VIDEO_DEMO.md).
+A regra que já está funcionando será **mostrada no Dashboard**; não
+precisaremos recriá-la durante o vídeo.
 
 ## Regra de teste e limitações
 
