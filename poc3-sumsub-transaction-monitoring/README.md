@@ -274,10 +274,25 @@ demonstrar o ciclo de decisão manual sem encerrar o alerta de 11 ETH.
 - Nonce da conta de teste: **3**
 - Saldo após a transferência: **89963 ETH de teste**
 
-**Status de integração Sumsub:** ainda não confirmado para essa segunda
-transação. Execute `send_to_sumsub.py` seguido de
-`check_sumsub_tm.py` com o hash acima; não afirme que o alerta de
-12 ETH foi acionado até obter a resposta da API.
+**Resultado Sumsub Transaction Monitoring Sandbox confirmado em 03/11/2026:**
+
+- Consulta da transação por `txnId`: **HTTP 200**
+- Score atribuído pela **Sumsub**: **60**
+- `reviewStatus`: **`onHold`**
+- `reviewAnswer`: **N/A** (decisão ainda não tomada)
+- `matchedRules`: **1**
+- Regra: `POC3 - Transferencia de alto valor de ETH`
+- ID interno da transação na Sumsub: `6aea4c1de6fd3995b0ab1cda`
+- Evidência JSON local: `cases/CASE-54494580.json`
+
+**Próxima etapa:** atribuir analista, adicionar observação e registrar
+uma decisão de teste no **Dashboard Sandbox** apenas para esta transação.
+Antes da decisão, registrar o estado `onHold` por API e no Dashboard,
+para preservar o comparativo do vídeo. Em seguida, consultar novamente
+`review_sumsub_tm.py --tx-hash <hash>` para capturar o status final.
+
+O score de 60 indica correspondência à regra de **valor elevado**,
+não uma conclusão de atividade ilícita ou aprovação automática de controles AML.
 
 **Atenção:** a decisão final deve ser aplicada somente à transação
 de 12 ETH, após registrar as telas com `onHold`. Preserve a transferência
