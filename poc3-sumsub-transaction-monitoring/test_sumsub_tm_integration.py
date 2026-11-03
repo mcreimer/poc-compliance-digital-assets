@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import send_to_sumsub
+import compliance_monitor
 import sumsub_tm_case
 
 
@@ -60,6 +61,39 @@ class SumsubTMTests(unittest.TestCase):
             self.assertEqual(
                 len(result["sumsubTransactionMonitoring"]["matchedRules"]), 1
             )
+
+    def test_refresh_local_assessment_preserves_sumsub_evidence(self):
+        with tempfile.TemporaryDirectory() as folder:
+            cases = Path(folder) / "cases"
+            cases.mkdir()
+            target = cases / "CASE-CF85CF6D.json"
+            provider_evidence = {
+                "score": 60,
+                "reviewStatus": "onHold",
+                "matchedRules": [{"name": "POC3 - Transferencia de alto valor de ETH"}],
+            }
+            target.write_text(json.dumps({
+                "caseId": "CASE-CF85CF6D",
+                "createdAt": "2026-11-03T18:00:00+00:00",
+                "transaction": {"hash": HASH},
+                "sumsubTransactionMonitoring": provider_evidence,
+                "riskAssessment": {"score": 30},
+            }), encoding="utf-8")
+
+            revised_local = {
+                "caseId": "CASE-CF85CF6D",
+                "createdAt": "2026-11-03T19:00:00+00:00",
+                "transaction": {"hash": HASH, "amount": 11.0},
+                "riskAssessment": {"score": 60, "decision": "MANUAL_REVIEW"},
+            }
+            path = compliance_monitor.save_case_preserving_provider_evidence(
+                revised_local, base_dir=Path(folder)
+            )
+            saved = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(saved["riskAssessment"]["score"], 60)
+            self.assertEqual(saved["sumsubTransactionMonitoring"], provider_evidence)
+            self.assertEqual(saved["transaction"]["amount"], 11.0)
+            self.assertEqual(saved["createdAt"], "2026-11-03T18:00:00+00:00")
 
     def test_case_rejects_different_transaction(self):
         with tempfile.TemporaryDirectory() as folder:
