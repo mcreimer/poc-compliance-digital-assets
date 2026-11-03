@@ -196,8 +196,9 @@ python demo_case_report.py \
 O comando gera `cases/DEMO-PoC3-COMPARATIVO.html`, que pode ser aberto
 diretamente no navegador. No relatório, clique nas abas **11 ETH** e
 **12 ETH**; as teclas **← / →** também alternam os casos. Há um botão
-**Modo apresentação** para gravação em tela cheia do navegador e um
-estilo específico para imprimir ou salvar PDF pelo navegador.
+**Modo apresentação** para ampliar o layout na gravação. Para usar a
+tela cheia do navegador, pressione **F11**. O relatório também tem estilo
+específico para imprimir ou salvar PDF pelo navegador.
 
 O HTML inclui somente informações selecionadas do case, não as credenciais
 nem a resposta bruta da Sumsub. **Observações e responsável do analista**
