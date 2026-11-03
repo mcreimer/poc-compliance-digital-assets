@@ -108,7 +108,9 @@ Scripts auxiliares da integração Sumsub:
 - `test_sumsub_env.py` — validação local das variáveis de ambiente;
 - `test_sumsub_api.py` — teste de conectividade/autenticação;
 - `test_sumsub_tm.py` — teste de disponibilidade do módulo Transaction Monitoring;
-- `send_to_sumsub.py` — leitura de uma transação do Besu e preparação/envio do payload de Transaction Monitoring.
+- `send_to_sumsub.py` — envio real ao Transaction Monitoring Sandbox;
+- `check_sumsub_tm.py` — consulta de resultado por txnId;
+- `sumsub_tm_case.py` — gravação de evidências reais no case local.
 
 Para validar apenas a configuração local:
 
@@ -122,27 +124,38 @@ Para testar a API:
 python test_sumsub_api.py
 ```
 
-Para gerar e revisar o payload da transação de 11 ETH sem enviá-lo:
+### Monitoramento transacional real no Sandbox
+
+A implementação de integração com **Sumsub Transaction Monitoring** foi preparada
+para teste local. Ainda não foi executada com as credenciais do usuário.
+
+Configure o arquivo local `.env` (token `sbx:` da Sandbox) e o
+`sumsub_applicants.json` com o `applicantId` existente do `BANK_ALPHA`.
 
 ```bash
-python send_to_sumsub.py \
-  --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c \
-  --level id-only \
-  --show-payload
+python test_sumsub_env.py
+python test_sumsub_tm.py
+python compliance_monitor.py --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
+python send_to_sumsub.py --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c --dry-run
+python send_to_sumsub.py --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
+python check_sumsub_tm.py --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
 ```
 
-Quando o script perguntar se deve enviar para a Sumsub, responda `N` se quiser apenas fazer o dry run.
+O envio usa o endpoint do **applicant existente**. O script pede confirmação
+antes de enviar. O arquivo local `cases/CASE-CF85CF6D.json` preserva a
+avaliação **demonstrativa** em `riskAssessment` e registra a resposta real da
+Sumsub em `sumsubTransactionMonitoring`.
 
-### Limitação atual
+No Dashboard (Sandbox), use **Monitoring → Transactions and activity**. O token
+precisa da permissão **View TM transactions** para consultar o resultado.
+Antes de esperar alertas, instale/configure regras no Sandbox pelo menu
+**Configurations → Rule hub → Installed rules**. Uma regra de teste pode usar
+`data.info.amount >= 10 AND data.info.currencyCode == "ETH"` com ação
+`Put on hold`; valide a expressão no editor de regras.
 
-A autenticação básica com a API da Sumsub foi validada no ambiente de desenvolvimento, mas o endpoint de **Transaction Monitoring/KYT** retornou:
-
-```text
-HTTP 403
-"You don't have this feature enabled, please contact us"
-```
-
-Por isso, a PoC usa a Sumsub como camada de identidade e um rules engine local para a decisão de risco. Em uma implantação real, essa camada pode ser substituída ou complementada por uma plataforma especializada de transaction monitoring / blockchain intelligence.
+Como a Besu é privada (`chainId 1337`), análises externas de blockchains
+públicas não conseguem verificar esse hash. Esta integração demonstra
+**Transaction Monitoring**, não a execução da Travel Rule.
 
 ## Regras implementadas
 
@@ -182,6 +195,8 @@ poc-compliance-digital-assets/
 ├── sumsub_client.py
 ├── create_sumsub_individual.py
 ├── send_to_sumsub.py
+├── check_sumsub_tm.py
+├── sumsub_tm_case.py
 ├── test_sumsub_api.py
 ├── test_sumsub_env.py
 ├── test_sumsub_tm.py
@@ -398,27 +413,31 @@ Test API connectivity:
 python test_sumsub_api.py
 ```
 
-Generate and inspect the 11 ETH transaction payload without submitting it:
+### Real Sandbox Transaction Monitoring
+
+The Sumsub Transaction Monitoring API code is prepared, **not yet executed**
+against the user's Sandbox. Configure `.env` with an `sbx:` token and link
+the existing `BANK_ALPHA` applicant in `sumsub_applicants.json`.
 
 ```bash
-python send_to_sumsub.py \
-  --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c \
-  --level id-only \
-  --show-payload
+python test_sumsub_env.py
+python test_sumsub_tm.py
+python compliance_monitor.py --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
+python send_to_sumsub.py --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c --dry-run
+python send_to_sumsub.py --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
+python check_sumsub_tm.py --tx-hash 0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c
 ```
 
-Answer `N` when prompted if you only want a dry run.
+The API uses an existing applicant. The local case
+`cases/CASE-CF85CF6D.json` retains the **demonstrative local score** in
+`riskAssessment` and stores the returned **Sumsub API result** separately
+in `sumsubTransactionMonitoring`. View real rule matches and review
+status in Sandbox: **Monitoring → Transactions and activity**.
+The API token needs **View TM transactions** permission for the GET request.
 
-### Current limitation
-
-Basic Sumsub API authentication was validated during development, but the **Transaction Monitoring/KYT** endpoint returned:
-
-```text
-HTTP 403
-"You don't have this feature enabled, please contact us"
-```
-
-The PoC therefore uses Sumsub as the identity layer and a local rules engine for transaction-risk decisions. In a production architecture, this layer could be replaced or complemented by a specialized transaction-monitoring or blockchain-intelligence platform.
+Configure suitable Sandbox rules before expecting a triggered review.
+Public-chain analytics cannot independently resolve private Besu hashes.
+This is a Transaction Monitoring integration, not a Travel Rule flow.
 
 ## Implemented rules
 
