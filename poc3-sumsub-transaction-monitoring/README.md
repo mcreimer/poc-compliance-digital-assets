@@ -261,6 +261,28 @@ Sumsub na seção **Observações**; não se deve presumir que ela será
 incluída na resposta do endpoint de consulta de transação. Mostre
 essa evidência no Dashboard durante o vídeo.
 
+### Segunda transação — evidência on-chain confirmada (03/11/2026)
+
+Uma transferência adicional foi **confirmada no Besu privado** para
+demonstrar o ciclo de decisão manual sem encerrar o alerta de 11 ETH.
+
+- Banco Alpha → Custodian Gamma: **12 ETH**
+- Chain ID: **1337**
+- Bloco: **27683**
+- Receipt status: **1** (sucesso)
+- Hash: `0x54494580bd9c84e924acd55256330f9aae4aff2c43c4ed3a7c62bf00ffe65218`
+- Nonce da conta de teste: **3**
+- Saldo após a transferência: **89963 ETH de teste**
+
+**Status de integração Sumsub:** ainda não confirmado para essa segunda
+transação. Execute `send_to_sumsub.py` seguido de
+`check_sumsub_tm.py` com o hash acima; não afirme que o alerta de
+12 ETH foi acionado até obter a resposta da API.
+
+**Atenção:** a decisão final deve ser aplicada somente à transação
+de 12 ETH, após registrar as telas com `onHold`. Preserve a transferência
+original de 11 ETH em espera para a gravação.
+
 ## Regra de teste e limitações
 
 Neste cenário foi configurada e ativada no Sandbox a regra `POC3 - Transferencia de alto valor de ETH`, que corresponde a **11 ETH na chain 1337**, adiciona **60 pontos**, aplica a etiqueta **Valor muito alto** e coloca a transação **em espera para revisão**. Outras transações ou regras podem gerar resultados diferentes.
