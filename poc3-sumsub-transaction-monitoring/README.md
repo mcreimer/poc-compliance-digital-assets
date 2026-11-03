@@ -25,6 +25,41 @@ Hyperledger Besu (RPC read-only)
                          └─ sumsubTransactionMonitoring: resposta da Sumsub (real)
 ```
 
+## Resultado da validação — 3 de novembro de 2026
+
+**Integração ponta a ponta comprovada no Sumsub Sandbox.**
+
+Uma transferência histórica real da rede **Besu privada** foi lida via RPC,
+convertida para o payload de negócio e enviada ao **Transaction Monitoring**
+da Sumsub com o applicant de teste já existente.
+
+| Evidência | Valor confirmado |
+|---|---|
+| Transferência | Banco Alpha → Custodian Gamma, 11 ETH |
+| Blockchain | Besu privada, chainId 1337, bloco 4453 |
+| Sumsub API — consulta por txnId | HTTP 200 |
+| Sumsub TM score | 60 |
+| Sumsub TM reviewStatus | `onHold` |
+| Regras que corresponderam | 1 |
+| Nome da regra | `POC3 - Transferencia de alto valor de ETH` |
+| Status no Dashboard | Requer uma ação |
+| Etiqueta | Valor muito alto |
+| Evidência JSON local | `cases/CASE-CF85CF6D.json` |
+
+A **decisão de revisão manual ainda não foi tomada** (`reviewAnswer: N/A`);
+o estado atual é **em espera para análise**, não uma rejeição da transação.
+A evidência foi validada pelo retorno da API e visualmente no painel Sandbox.
+O case completo continua armazenado **localmente**, ignorado pelo Git.
+
+O score de 60 no **motor local** e o score de 60 na **Sumsub** são avaliações
+independentes, que por acaso coincidiram devido às regras deste cenário.
+O fluxo não equivale a análise independente do histórico on-chain de uma
+blockchain privada pela Sumsub, e não implementa Travel Rule.
+
+**Segurança do case:** a partir da atualização de 3 de novembro de 2026,
+executar novamente `compliance_monitor.py` atualiza somente os campos locais e
+**preserva** `sumsubTransactionMonitoring` já registrado.
+
 ## Arquivos principais
 
 - `send_to_sumsub.py` — lê hash e bloco do Besu e envia a transação de negócio para o TM Sandbox após confirmação.
@@ -107,7 +142,7 @@ O resultado real fica em `cases/CASE-CF85CF6D.json` (arquivo local ignorado pelo
 
 ## Regra de teste e limitações
 
-Instale/configure regras no **Configurations → Rule hub**, em modo de teste primeiro; um valor de 11 ETH **não garante**, por si só, alerta ou rejeição.
+Neste cenário foi configurada e ativada no Sandbox a regra `POC3 - Transferencia de alto valor de ETH`, que corresponde a **11 ETH na chain 1337**, adiciona **60 pontos**, aplica a etiqueta **Valor muito alto** e coloca a transação **em espera para revisão**. Outras transações ou regras podem gerar resultados diferentes.
 
 A Sumsub recebe atributos informados pelo sistema de origem, mas **não consegue comprovar automaticamente o hash da Besu privada em exploradores ou serviços de análise de blockchains públicas**. Crypto screening e alertas baseados em exposição on-chain pública podem não funcionar para a chain 1337. A PoC demonstra Transaction Monitoring, **não validação de Travel Rule** nem controles AML de produção.
 
