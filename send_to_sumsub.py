@@ -14,6 +14,8 @@ IMPORTANT:
 """
 
 import argparse
+import os
+import re
 import json
 import sys
 from datetime import datetime, timezone
@@ -23,6 +25,7 @@ from urllib.parse import quote
 import requests
 
 from sumsub_client import request as sumsub_request
+from sumsub_tm_case import save_sumsub_result, transaction_summary
 
 
 BASE = Path(__file__).resolve().parent
@@ -205,6 +208,45 @@ def build_sumsub_payload(tx, block, receipt, entities):
     return payload, sender_entity, recipient_entity, amount_eth, block_number
 
 
+def existing_applicant_id(sender_entity, explicit_id=None):
+    """Locate the pre-existing Sandbox applicant linked to the Besu sender."""
+    if explicit_id:
+        applicant_id = explicit_id.strip()
+    else:
+        mapping_file = BASE / "sumsub_applicants.json"
+        if not mapping_file.exists():
+            raise RuntimeError(
+                "Arquivo sumsub_applicants.json ausente. Copie o arquivo "
+                "sumsub_applicants.example.json e informe o applicantId do Banco Alpha."
+            )
+        with mapping_file.open("r", encoding="utf-8") as stream:
+            mappings = json.load(stream)
+        matches = [
+            row.get("applicantId")
+            for row in mappings
+            if row.get("entityId") == sender_entity["id"]
+        ]
+        applicant_id = matches[0] if matches else None
+
+    if not applicant_id or applicant_id.startswith("REPLACE_"):
+        raise RuntimeError(
+            f"Applicant ID não configurado para {sender_entity['id']}."
+        )
+    if not re.fullmatch(r"[A-Za-z0-9]+", applicant_id):
+        raise RuntimeError("Applicant ID inválido: use o ID fornecido pela Sumsub.")
+    return applicant_id
+
+
+def ensure_sandbox_token():
+    # Do not accidentally submit sample data to a production account.
+    token = os.getenv("SUMSUB_APP_TOKEN", "")
+    if not token.startswith("sbx:"):
+        raise RuntimeError(
+            "Token não é do Sandbox (prefixo sbx:). "
+            "Operação interrompida para proteger o ambiente de produção."
+        )
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Envia uma transação Besu já confirmada ao Sumsub Transaction Monitoring Sandbox."
@@ -217,9 +259,14 @@ def main():
     )
 
     parser.add_argument(
-        "--level",
-        required=True,
-        help="Nome EXATO de um nível de verificação de pessoa física no Sumsub Sandbox.",
+        "--applicant-id",
+        default=None,
+        help="Sobrescreve o applicantId em sumsub_applicants.json, se necessário.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Apenas monta e exibe a transação; não chama a API.",
     )
 
     parser.add_argument(
@@ -242,7 +289,6 @@ def main():
 
     print("\n=== BESU -> SUMSUB TRANSACTION MONITORING ===")
     print("Besu RPC:", args.rpc)
-    print("Sumsub level:", args.level)
     print("Tx hash:", tx_hash)
 
     try:
@@ -257,7 +303,14 @@ def main():
         print(exc)
         sys.exit(1)
 
+    try:
+        applicant_id = existing_applicant_id(sender_entity, args.applicant_id)
+    except (RuntimeError, ValueError, OSError, json.JSONDecodeError) as exc:
+        print("\nERRO no vínculo com o applicant Sumsub:", exc)
+        sys.exit(1)
+
     print("\nTransação encontrada no Besu:")
+    print("Applicant ID:", applicant_id)
     print("Block:", block_number)
     print("From:", tx["from"], f"({sender_entity['name']})")
     print("To:  ", tx["to"], f"({recipient_entity['name']})")
@@ -268,15 +321,26 @@ def main():
         print("\nPayload a enviar para Sumsub:")
         print(json.dumps(payload, indent=2, ensure_ascii=False))
 
-    answer = input("\nEnviar esta transação ao Sumsub Sandbox? [y/N]: ").strip().lower()
+    if args.dry_run:
+        print("\nDRY RUN: nenhuma chamada foi enviada à Sumsub.")
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+        return
 
-    if answer != "y":
+    answer = input("\nEnviar esta transação ao Sumsub Sandbox? [y/N]: ").strip().lower()
+    if answer not in ("y", "yes", "s", "sim"):
         print("Operação cancelada.")
         return
 
+    try:
+        ensure_sandbox_token()
+    except RuntimeError as exc:
+        print("\nERRO:", exc)
+        sys.exit(1)
+
+    # Use the existing applicant path: never create a duplicate applicant.
     path = (
-        "/resources/applicants/-/kyt/txns/-/data"
-        f"?levelName={quote(args.level, safe='')}"
+        f"/resources/applicants/{quote(applicant_id, safe='')}"
+        "/kyt/txns/-/data"
     )
     body = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
 
@@ -296,11 +360,11 @@ def main():
     if response.status_code == 409:
         print(
             "\nA Sumsub informou que esse txnId já existe. "
-            "Isso é esperado se você já tiver enviado essa mesma transação."
+            "Use check_sumsub_tm.py para consultar o resultado já registrado."
         )
         return
 
-    if response.status_code != 200:
+    if response.status_code not in (200, 201):
         print("\nERRO: a transação não foi aceita pelo Sumsub.")
         print(
             "Confira principalmente o nome do level, permissões do App Token "
@@ -308,13 +372,20 @@ def main():
         )
         sys.exit(1)
 
+    case_path = save_sumsub_result(
+        tx_hash, data or {}, applicant_id=applicant_id,
+        stage="submitted", payload=payload
+    )
     print("\n=== TRANSACTION SUBMITTED ===")
     print("Sumsub txnId:", payload["txnId"])
+    print("Sumsub internal ID:", (data or {}).get("id", "N/A"))
+    transaction_summary(data or {})
+    print("Evidência salva em:", case_path)
     print("Besu tx hash:", tx_hash)
     print("Block:", block_number)
     print(
         "\nAgora abra no Dashboard Sumsub: "
-        "Transações e Travel Rule -> Transações, e procure pelo txnId."
+        "Monitoring -> Transactions and activity e procure pelo txnId."
     )
     print(
         "\nObservação: como esta é uma rede Besu privada (chainId 1337), "
