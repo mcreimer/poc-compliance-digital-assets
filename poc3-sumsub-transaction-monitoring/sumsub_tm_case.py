@@ -75,6 +75,29 @@ def save_sumsub_result(tx_hash, response, applicant_id=None, stage="queried", pa
         result["submittedPayload"] = payload
     elif existing_tm.get("submittedPayload"):
         result["submittedPayload"] = existing_tm["submittedPayload"]
+    # Compact, append-only status timeline. It preserves a prior onHold
+    # observation when the analyst later approves or rejects the transaction.
+    def snapshot(tm, observed_at=None):
+        return {
+            "observedAt": observed_at or tm.get("lastUpdatedAt"),
+            "score": tm.get("score"),
+            "reviewStatus": tm.get("reviewStatus"),
+            "reviewAnswer": tm.get("reviewAnswer"),
+            "matchedRuleNames": [
+                r.get("title") or r.get("name") or r.get("id")
+                for r in (tm.get("matchedRules") or [])
+            ],
+        }
+
+    history = case.get("sumsubMonitoringTimeline") or []
+    if not history and existing_tm.get("reviewStatus"):
+        history.append(snapshot(existing_tm))
+
+    new_snapshot = snapshot(result)
+    tracked = ("score", "reviewStatus", "reviewAnswer", "matchedRuleNames")
+    if not history or any(history[-1].get(k) != new_snapshot[k] for k in tracked):
+        history.append(new_snapshot)
+    case["sumsubMonitoringTimeline"] = history
     case["sumsubTransactionMonitoring"] = result
 
     # File is local and excluded from version control by .gitignore.
