@@ -10,6 +10,7 @@ import send_to_sumsub
 import compliance_monitor
 import sumsub_tm_case
 import review_sumsub_tm
+import demo_case_report
 
 
 HASH = "0xcf85cf6d25235bac271236f5a4e46290cad5c237da06f7702df07ced26fcf89c"
@@ -150,6 +151,66 @@ class SumsubTMTests(unittest.TestCase):
             review_sumsub_tm.validate_decision(
                 "besu" + ("0" * 64), valid, "TESTTXN123456", "approve"
             )
+
+    def test_report_two_cases_and_statuses_without_leaking_full_api(self):
+        original = {
+            "caseId": "CASE-CF85CF6D",
+            "transaction": {"hash": HASH, "amount": 11.0, "block": 4453, "status": 1},
+            "sender": {"name": "Banco Alpha"},
+            "counterparty": {"name": "Custodian Gamma"},
+            "network": {"chainId": 1337},
+            "riskAssessment": {"score": 60, "decision": "MANUAL_REVIEW"},
+            "sumsubTransactionMonitoring": {
+                "score": 60,
+                "reviewStatus": "onHold",
+                "reviewAnswer": None,
+                "matchedRules": [{"name": "POC3 - Transferencia de alto valor de ETH"}],
+                "response": {"secret": "API_RESPONSE_SHOULD_NOT_APPEAR"},
+            },
+            "sumsubMonitoringTimeline": [
+                {"reviewStatus": "onHold", "score": 60,
+                 "observedAt": "2026-11-03T15:00:00+00:00"},
+            ],
+        }
+        second = {
+            **original,
+            "caseId": "CASE-54494580",
+            "transaction": {"hash": "0x" + ("1" * 64), "amount": 12.0, "block": 27683,
+                            "status": 1},
+            "sumsubTransactionMonitoring": {
+                "score": 60, "reviewStatus": "completed", "reviewAnswer": "GREEN",
+                "matchedRules": [{"name": "POC3 - Transferencia de alto valor de ETH"}],
+            },
+            "sumsubMonitoringTimeline": [
+                {"reviewStatus": "onHold", "score": 60,
+                 "observedAt": "2026-11-03T15:00:00+00:00"},
+                {"reviewStatus": "completed", "reviewAnswer": "GREEN", "score": 60,
+                 "observedAt": "2026-11-03T16:00:00+00:00"},
+            ],
+        }
+        page = demo_case_report.render_document([original, second])
+        self.assertIn("CASE-CF85CF6D", page)
+        self.assertIn("CASE-54494580", page)
+        self.assertIn("Aguardando revisão", page)
+        self.assertIn("Aprovada manualmente", page)
+        self.assertIn("POC3 - Transferencia", page)
+        self.assertIn("data-target=\"1\"", page)
+        self.assertNotIn("API_RESPONSE_SHOULD_NOT_APPEAR", page)
+
+    def test_report_escapes_untrusted_case_text(self):
+        case = {
+            "caseId": "CASE-00000000",
+            "transaction": {"hash": "<script>danger</script>", "amount": 1},
+            "sender": {"name": "<img src=x onerror=alert(1)>"},
+            "sumsubTransactionMonitoring": {
+                "score": 0, "reviewStatus": "onHold",
+                "matchedRules": [{"name": "<b>Not a title</b>"}],
+            },
+        }
+        page = demo_case_report.render_document([case])
+        self.assertIn("&lt;img src=x onerror=alert(1)&gt;", page)
+        self.assertIn("&lt;b&gt;Not a title&lt;/b&gt;", page)
+        self.assertNotIn("<img src=x onerror=alert(1)>", page)
 
     def test_case_rejects_different_transaction(self):
         with tempfile.TemporaryDirectory() as folder:
