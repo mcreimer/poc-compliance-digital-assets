@@ -71,6 +71,7 @@ executar novamente `compliance_monitor.py` atualiza somente os campos locais e
 - `test_sumsub_tm_integration.py` — testes locais sem credenciais nem rede;
 - `review_sumsub_tm.py` — consulta a revisão; conclusão por API somente sob confirmação explícita;
 - `demo_case_report.py` — relatório HTML local para gravação do vídeo;
+- `create_demo_transaction.py` — gera uma **segunda** transferência ETH na rede Besu privada para demonstrar a decisão final sem encerrar o alerta original;
 - `entities.json` e `sumsub_applicants.json` — associação local entre carteira, entidade fictícia e applicant Sandbox.
 
 ## Instalação em NOVA pasta no Ubuntu/WSL
@@ -204,6 +205,61 @@ script: use apenas um Sandbox e confira o caso antes de agir.
 O roteiro detalhado do vídeo é mantido separadamente em documento Word,
 fora deste repositório. A regra que já está funcionando será **mostrada no Dashboard**;
 não precisaremos recriá-la durante o vídeo.
+
+## Segundo cenário de demonstração — preservar o alerta original
+
+Após atribuir o primeiro alerta ao analista e salvar a observação no
+Dashboard, **não conclua a transação original de 11 ETH** ainda. Ela é a
+evidência do estágio `onHold` para o futuro vídeo.
+
+Para demonstrar uma revisão **com decisão final**, a PoC 3 agora contém
+um script **independente** para produzir uma nova transação de teste
+no mesmo Besu privado. Use apenas a conta de desenvolvimento Banco Alpha
+e a chave privada de testes (nunca chave de produção).
+
+**Esta etapa é opcional e transmite uma nova operação de teste on-chain.**
+Só execute quando quiser criar o segundo cenário:
+
+```bash
+# Dentro de ~/poc3-sumsub-tm/poc3-sumsub-transaction-monitoring
+python create_demo_transaction.py --amount 12
+```
+
+O script verifica o chain ID 1337, solicita uma chave privada de
+**desenvolvimento** sem mostrá-la no terminal e imprime o **novo hash** e
+bloco quando a transação for confirmada. Ele não envia dados à Sumsub.
+
+Depois, usando o hash que aparecer (`NOVO_HASH` é apenas placeholder):
+
+```bash
+python send_to_sumsub.py --tx-hash NOVO_HASH --dry-run
+python compliance_monitor.py --tx-hash NOVO_HASH
+python send_to_sumsub.py --tx-hash NOVO_HASH
+python check_sumsub_tm.py --tx-hash NOVO_HASH
+```
+
+Verifique no Dashboard que a regra acionou e colocou a **segunda transação**
+em espera. Atribua e anote também essa transação. Somente depois disso
+efetue uma **decisão manual demonstrativa** (aprovar ou rejeitar)
+**nessa segunda transação**, pelo Dashboard; o critério da decisão deve
+ser explicitado como parte do cenário fictício.
+
+Em seguida, consulte a mesma transação novamente:
+
+```bash
+python review_sumsub_tm.py --tx-hash NOVO_HASH
+python demo_case_report.py --case cases/CASE-XXXXXXXX.json
+```
+
+Substitua o arquivo CASE pelo nome emitido pelo script. A linha do tempo
+`sumsubMonitoringTimeline` preserva os estados distintos que já tiverem
+sido consultados pela API. Para uma sequência completa,
+execute `review_sumsub_tm.py` **antes e depois** da decisão.
+
+A observação/nota do analista é registrada diretamente no Dashboard
+Sumsub na seção **Observações**; não se deve presumir que ela será
+incluída na resposta do endpoint de consulta de transação. Mostre
+essa evidência no Dashboard durante o vídeo.
 
 ## Regra de teste e limitações
 
