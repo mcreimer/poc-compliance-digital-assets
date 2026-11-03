@@ -71,7 +71,6 @@ executar novamente `compliance_monitor.py` atualiza somente os campos locais e
 - `test_sumsub_tm_integration.py` — testes locais sem credenciais nem rede;
 - `review_sumsub_tm.py` — consulta a revisão; conclusão por API somente sob confirmação explícita;
 - `demo_case_report.py` — relatório HTML local para gravação do vídeo;
-- `VIDEO_DEMO.md` — roteiro preliminar com cenas Sumsub, Besu e trilha de auditoria.
 - `entities.json` e `sumsub_applicants.json` — associação local entre carteira, entidade fictícia e applicant Sandbox.
 
 ## Instalação em NOVA pasta no Ubuntu/WSL
@@ -168,7 +167,7 @@ alterar a decisão da Sumsub.
 
 - Abra **Monitoramento de transações → Transações**.
 - Atribua a transação em **Pessoa designada** ou no detalhe da transação.
-- Abra a transação, examine pontuação/regras e adicione uma nota na seção **Notas**.
+- Abra a transação, examine pontuação/regras e adicione uma anotação na seção **Observações**.
 - Para essa operação, sua conta precisa da permissão
   **Manage TM transactions - Review**.
 
@@ -202,9 +201,9 @@ Para essas decisões, o token necessita da permissão
 **Manage TM transactions - Decisions**. A decisão não é reversível pelo
 script: use apenas um Sandbox e confira o caso antes de agir.
 
-**Roteiro detalhado com sequência de telas e falas:** [VIDEO_DEMO.md](VIDEO_DEMO.md).
-A regra que já está funcionando será **mostrada no Dashboard**; não
-precisaremos recriá-la durante o vídeo.
+O roteiro detalhado do vídeo é mantido separadamente em documento Word,
+fora deste repositório. A regra que já está funcionando será **mostrada no Dashboard**;
+não precisaremos recriá-la durante o vídeo.
 
 ## Regra de teste e limitações
 
